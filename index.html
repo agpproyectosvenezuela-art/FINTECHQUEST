@@ -1,0 +1,3151 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SMART Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Lilita+One&display=swap" rel="stylesheet">
+<style>
+/* Concepto: pantalla de juego nocturna; los cristales S M A R T son la fuente de luz.
+   Cada mundo cambia el fondo (--g1/--g2) y el brillo (--glow). */
+:root {
+  --night: #0e1230;
+  --ink: #fff6df;
+  --muted: #bcc4f0;
+  --card: rgba(255, 255, 255, .09);
+  --card2: rgba(10, 14, 48, .55);
+  --line: rgba(255, 255, 255, .18);
+  --gold: #ffd24a;
+  --gold2: #ff9a1f;
+  --on-gold: #2b1600;
+  --good: #35e08a;
+  --bad: #ff5d73;
+  --warn: #ffb84a;
+  --g1: #1c3b8f;
+  --g2: #0b1b4d;
+  --glow: #4fd1ff;
+  --cS: #ff4d6d; --cM: #3b9bff; --cA: #2fd07a; --cR: #ff9a1f; --cT: #b36bff;
+  --f-display: "Lilita One", "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --f-body: "Fredoka", "Nunito", "Trebuchet MS", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--night);
+  background-image: radial-gradient(1200px 700px at 50% -10%, color-mix(in srgb, var(--glow) 22%, transparent), transparent 70%), linear-gradient(165deg, var(--g1), var(--g2));
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.35;
+  -webkit-user-select: none; user-select: none;
+  overflow-x: hidden;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; border-radius: 10px; }
+#app { max-width: 560px; margin: 0 auto; padding-inline: 16px; padding-block: 8px 28px; min-height: 100dvh; position: relative; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 400; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+.hidden { display: none !important; }
+
+/* estrellas de fondo */
+#sky { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+#sky i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; opacity: .5; animation: tw 3.5s infinite ease-in-out; }
+@keyframes tw { 50% { opacity: .1; transform: scale(.6); } }
+#app > * { position: relative; z-index: 1; }
+
+/* barra superior */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; padding-block: 6px; }
+.topbar .grp { display: flex; gap: 6px; align-items: center; }
+.ib { width: 42px; height: 42px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); display: grid; place-items: center; font-size: 20px; line-height: 1; }
+.ib:active { transform: translateY(1px); }
+.ib.off { opacity: .45; }
+.crumb { font-family: var(--f-display); font-size: 17px; opacity: .95; text-align: center; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* botones */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 10px 22px; border-radius: 18px; border: 0; font-family: var(--f-display); font-size: 20px; letter-spacing: .02em;
+  background: linear-gradient(180deg, var(--gold), var(--gold2)); color: var(--on-gold); box-shadow: 0 5px 0 #b45f00, 0 10px 18px rgba(0, 0, 0, .35); transition: transform .08s, box-shadow .08s; }
+.btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #b45f00, 0 3px 8px rgba(0, 0, 0, .35); }
+.btn.ghost { background: var(--card); color: var(--ink); border: 2px solid var(--line); box-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
+.btn.green { background: linear-gradient(180deg, #5af0a0, #1fb86a); color: #052b17; box-shadow: 0 5px 0 #0c7a43, 0 10px 18px rgba(0, 0, 0, .35); }
+.btn.small { min-height: 42px; font-size: 16px; padding: 6px 14px; border-radius: 14px; }
+.btn[disabled] { opacity: .45; pointer-events: none; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center; }
+.col { display: flex; flex-direction: column; gap: 12px; }
+
+/* tarjetas */
+.card { background: var(--card); border: 2px solid var(--line); border-radius: 22px; padding: 16px; backdrop-filter: blur(6px); }
+.muted { color: var(--muted); }
+.tip { margin: 10px 0 0; padding: 10px 12px; border-radius: 14px; background: rgba(255, 210, 74, .13); border: 1.5px dashed rgba(255, 210, 74, .55); font-size: 15px; }
+
+/* ---------- Gemas ---------- */
+.gx { --gc: #888; --clip: circle(48%); }
+.gx.g0 { --gc: var(--cS); --clip: polygon(50% 2%, 98% 50%, 50% 98%, 2% 50%); }
+.gx.g1 { --gc: var(--cM); --clip: polygon(26% 6%, 74% 6%, 98% 50%, 74% 94%, 26% 94%, 2% 50%); }
+.gx.g2 { --gc: var(--cA); --clip: polygon(50% 4%, 98% 90%, 2% 90%); }
+.gx.g3 { --gc: var(--cR); --clip: polygon(50% 2%, 62% 36%, 98% 38%, 70% 60%, 80% 96%, 50% 74%, 20% 96%, 30% 60%, 2% 38%, 38% 36%); }
+.gx.g4 { --gc: var(--cT); --clip: circle(48%); }
+.gx.g5 { --gc: #fff; --clip: circle(48%); }
+.gx .sh { position: absolute; inset: 9%; clip-path: var(--clip); background: linear-gradient(135deg, rgba(255, 255, 255, .7) 0, rgba(255, 255, 255, 0) 38%, rgba(0, 0, 0, .3) 100%), var(--gc); }
+.gx .sh::after { content: ""; position: absolute; left: 22%; top: 14%; width: 26%; height: 16%; border-radius: 50%; background: rgba(255, 255, 255, .6); transform: rotate(-32deg); }
+.gx b { position: relative; font-family: var(--f-display); font-weight: 400; font-size: calc(var(--s, var(--cell)) * .42); color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .38); line-height: 1; }
+.gx.g2 b { margin-top: 16%; }
+.gx.g3 b { margin-top: 3%; }
+.gx .arr { position: absolute; right: 8%; top: 4%; font-style: normal; font-size: calc(var(--s, var(--cell)) * .26); color: #fff; text-shadow: 0 0 6px #000; z-index: 2; }
+.gx.sp1 .sh, .gx.sp2 .sh { background: repeating-linear-gradient(var(--ang, 90deg), rgba(255, 255, 255, .55) 0 4px, transparent 4px 9px), linear-gradient(135deg, rgba(255, 255, 255, .7) 0, rgba(255, 255, 255, 0) 38%, rgba(0, 0, 0, .3) 100%), var(--gc); }
+.gx.sp2 { --ang: 0deg; }
+.gx.sp3 .sh { box-shadow: none; animation: pulseb 1s infinite alternate; }
+.gx.sp3::before { content: ""; position: absolute; inset: 2%; border-radius: 50%; border: 3px solid #fff; opacity: .8; animation: pulser 1s infinite alternate; }
+.gx.sp4 .sh { background: conic-gradient(#ff4d6d, #ff9a1f, #ffd24a, #2fd07a, #3b9bff, #b36bff, #ff4d6d); animation: spin 3s linear infinite; }
+.gx.sp4 b { font-size: calc(var(--s, var(--cell)) * .5); }
+@keyframes pulseb { to { filter: brightness(1.45); } }
+@keyframes pulser { to { transform: scale(1.08); opacity: .3; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.gi { --s: 30px; position: relative; display: inline-grid; place-items: center; width: var(--s); height: var(--s); vertical-align: middle; flex: none; }
+.gi.big { --s: 54px; }
+.gi.lg { --s: 44px; }
+.gem { position: absolute; left: 0; top: 0; width: var(--cell); height: var(--cell); display: grid; place-items: center; z-index: 2; touch-action: none;
+  transform: translate(calc(var(--c) * var(--cell)), calc(var(--r) * var(--cell))); transition: transform .22s cubic-bezier(.3, .8, .4, 1); filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); }
+.gem.sel { filter: drop-shadow(0 0 8px #fff) drop-shadow(0 3px 2px rgba(0, 0, 0, .5)); scale: 1.14; z-index: 3; }
+.gem.pop { animation: popg .24s forwards; z-index: 4; }
+.gem.spawn { animation: spawn .36s; }
+.gem.shake { animation: shake .26s; }
+.gem.hintp { animation: hintp .8s infinite; }
+@keyframes popg { to { scale: 1.45; opacity: 0; filter: brightness(2); } }
+@keyframes spawn { 0% { scale: 0; } 60% { scale: 1.3; } 100% { scale: 1; } }
+@keyframes shake { 25% { translate: -5px 0; } 75% { translate: 5px 0; } }
+@keyframes hintp { 50% { scale: 1.18; filter: brightness(1.5) drop-shadow(0 0 8px #fff); } }
+
+/* ---------- Título ---------- */
+.title { text-align: center; padding-top: 4vh; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.logo { display: flex; gap: 4px; justify-content: center; }
+.logo .gi { --s: min(17vw, 78px); animation: bob 2.4s ease-in-out infinite; }
+.logo .gi:nth-child(2) { animation-delay: .15s; } .logo .gi:nth-child(3) { animation-delay: .3s; } .logo .gi:nth-child(4) { animation-delay: .45s; } .logo .gi:nth-child(5) { animation-delay: .6s; }
+@keyframes bob { 50% { transform: translateY(-9px) rotate(3deg); } }
+.title h1 { font-size: clamp(40px, 12vw, 64px); line-height: .95; color: var(--gold); text-shadow: 0 4px 0 #9a4d00, 0 10px 24px rgba(0, 0, 0, .45); }
+.title p.lead { max-width: 30ch; margin: 0; color: var(--muted); font-size: 18px; }
+.menu { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+.menu .btn { width: 100%; }
+.credit { font-size: 13px; color: var(--muted); opacity: .85; margin-top: 8px; }
+.namebox { display: flex; gap: 8px; width: 100%; max-width: 360px; }
+.namebox input { flex: 1; min-width: 0; min-height: 52px; border-radius: 16px; border: 2px solid var(--line); background: var(--card2); color: var(--ink); padding: 0 16px; font: inherit; font-size: 18px; user-select: text; -webkit-user-select: text; }
+
+/* ---------- Mundos ---------- */
+.wgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+@media (max-width: 380px) { .wgrid { grid-template-columns: 1fr; } }
+.wcard { text-align: left; border-radius: 22px; border: 2px solid var(--line); padding: 14px; color: var(--ink); display: flex; flex-direction: column; gap: 6px; min-height: 150px; position: relative; overflow: hidden;
+  background: linear-gradient(160deg, var(--w1), var(--w2)); box-shadow: 0 6px 0 rgba(0, 0, 0, .35); }
+.wcard .em { font-size: 40px; line-height: 1; }
+.wcard h3 { font-size: 20px; line-height: 1.05; }
+.wcard small { color: rgba(255, 255, 255, .8); font-size: 13px; }
+.wcard .pr { margin-top: auto; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+.wcard.lock { filter: grayscale(.85) brightness(.7); }
+.wcard.lock::after { content: "🔒"; position: absolute; right: 12px; top: 10px; font-size: 22px; }
+.bar { height: 10px; border-radius: 8px; background: rgba(0, 0, 0, .35); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2)); border-radius: 8px; transition: width .4s; }
+
+/* ---------- Mapa de niveles ---------- */
+.whead { text-align: center; margin: 4px 0 10px; }
+.whead .em { font-size: 44px; }
+.whead h2 { font-size: 28px; }
+.lmap { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 10px; border-radius: 24px; background: var(--card2); border: 2px solid var(--line); }
+.lv { aspect-ratio: 1; border-radius: 18px; border: 2px solid var(--line); background: var(--card); display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 22px; gap: 0; padding: 2px; position: relative; box-shadow: 0 4px 0 rgba(0, 0, 0, .35); }
+.lv .st { font-size: 11px; letter-spacing: -1px; color: var(--gold); line-height: 1; min-height: 12px; }
+.lv.done { background: linear-gradient(160deg, rgba(53, 224, 138, .35), rgba(53, 224, 138, .1)); border-color: rgba(53, 224, 138, .7); }
+.lv.cur { background: linear-gradient(180deg, var(--gold), var(--gold2)); color: var(--on-gold); border-color: #fff; animation: curp 1.2s infinite alternate; }
+.lv.lock { opacity: .4; pointer-events: none; box-shadow: none; }
+.lv.boss { grid-column: span 5; aspect-ratio: auto; min-height: 76px; flex-direction: row; gap: 14px; font-size: 22px; background: linear-gradient(160deg, rgba(255, 77, 109, .3), rgba(179, 107, 255, .25)); }
+.lv.boss.cur { background: linear-gradient(180deg, var(--gold), var(--gold2)); }
+.lv.boss .be { font-size: 38px; line-height: 1; }
+@keyframes curp { to { transform: scale(1.07); } }
+
+/* ---------- Partida ---------- */
+.hud { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+.pill { border-radius: 16px; background: var(--card2); border: 2px solid var(--line); padding: 4px 12px; text-align: center; }
+.pill small { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pill b { font-family: var(--f-display); font-weight: 400; font-size: 24px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.pill.moves { min-width: 92px; }
+.pill.moves.low b { color: var(--bad); animation: curp .5s infinite alternate; }
+.goals { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 10px; }
+.goal { display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 6px; border-radius: 999px; background: var(--card2); border: 2px solid var(--line); font-family: var(--f-display); font-size: 18px; font-variant-numeric: tabular-nums; }
+.goal.ok { border-color: var(--good); background: rgba(53, 224, 138, .18); }
+.goal.ok::after { content: "✔"; color: var(--good); }
+.boardwrap { display: grid; place-items: center; }
+.board { --n: 6; --cell: min(calc((100vw - 48px) / var(--n)), 66px);
+  position: relative; width: calc(var(--n) * var(--cell)); height: calc(var(--n) * var(--cell)); border-radius: 20px; touch-action: none; overflow: hidden;
+  background-color: rgba(7, 10, 40, .6); background-image: conic-gradient(rgba(255, 255, 255, .08) 25%, transparent 0 50%, rgba(255, 255, 255, .08) 0 75%, transparent 0); background-size: calc(var(--cell) * 2) calc(var(--cell) * 2);
+  border: 3px solid var(--line); box-shadow: 0 0 30px color-mix(in srgb, var(--glow) 35%, transparent), inset 0 0 30px rgba(0, 0, 0, .4); }
+@supports (height: 100dvh) { .board { --cell: min(calc((100vw - 48px) / var(--n)), calc((100dvh - 330px) / var(--n)), 66px); } }
+.board.hammer { cursor: crosshair; box-shadow: 0 0 0 3px var(--gold), 0 0 30px var(--gold); }
+.ice { position: absolute; left: 0; top: 0; width: var(--cell); height: var(--cell); transform: translate(calc(var(--c) * var(--cell)), calc(var(--r) * var(--cell))); z-index: 1; pointer-events: none;
+  background: linear-gradient(135deg, rgba(190, 240, 255, .5), rgba(120, 200, 255, .25)); border: 2px solid rgba(225, 250, 255, .85); border-radius: 10px; box-shadow: inset 0 0 14px rgba(255, 255, 255, .7); }
+.ice.h2 { background: linear-gradient(135deg, rgba(220, 250, 255, .78), rgba(140, 210, 255, .5)); border-width: 4px; }
+.ice.brk { animation: icebrk .35s forwards; }
+@keyframes icebrk { to { scale: 1.3; opacity: 0; } }
+.fxl { position: absolute; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; }
+.beam { position: absolute; background: linear-gradient(90deg, transparent, #fff, transparent); opacity: 0; animation: beam .45s ease-out; }
+.beam.h { left: 0; width: 100%; height: calc(var(--cell) * .8); top: calc(var(--r) * var(--cell) + var(--cell) * .1); }
+.beam.v { top: 0; height: 100%; width: calc(var(--cell) * .8); left: calc(var(--c) * var(--cell) + var(--cell) * .1); background: linear-gradient(180deg, transparent, #fff, transparent); }
+@keyframes beam { 20% { opacity: 1; } 100% { opacity: 0; } }
+.ring { position: absolute; width: calc(var(--cell) * 1.2); height: calc(var(--cell) * 1.2); left: calc(var(--c) * var(--cell) - var(--cell) * .1); top: calc(var(--r) * var(--cell) - var(--cell) * .1); border-radius: 50%; border: 5px solid #fff; animation: ring .5s ease-out forwards; }
+@keyframes ring { to { scale: 4.2; opacity: 0; } }
+.flash { position: absolute; inset: 0; background: radial-gradient(circle, #fff, transparent 70%); animation: beam .6s ease-out; }
+.pt { position: absolute; width: 8px; height: 8px; border-radius: 50%; left: calc(var(--c) * var(--cell) + var(--cell) / 2); top: calc(var(--r) * var(--cell) + var(--cell) / 2); background: var(--pc, #fff); animation: pt .5s ease-out forwards; }
+@keyframes pt { to { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; } }
+.pts { position: absolute; font-family: var(--f-display); font-size: calc(var(--cell) * .42); color: #fff; text-shadow: 0 2px 0 #000, 0 0 8px var(--gold); left: calc(var(--c) * var(--cell)); top: calc(var(--r) * var(--cell)); animation: pts .8s ease-out forwards; white-space: nowrap; }
+@keyframes pts { to { transform: translateY(-34px); opacity: 0; } }
+.boost { display: flex; justify-content: center; gap: 10px; margin-top: 12px; }
+.boost .btn { min-height: 46px; font-size: 17px; padding: 6px 16px; }
+.boost .btn.on { outline: 3px solid #fff; }
+.banner { position: absolute; inset: 0; display: grid; place-items: center; z-index: 8; pointer-events: none; }
+.banner span { font-family: var(--f-display); font-size: clamp(22px, 7vw, 34px); padding: 10px 22px; border-radius: 20px; background: rgba(10, 14, 48, .85); border: 3px solid var(--gold); color: var(--gold); animation: ban 1.4s forwards; text-align: center; }
+@keyframes ban { 0% { scale: .4; opacity: 0; } 15% { scale: 1.1; opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; scale: 1; } }
+
+/* ---------- Retos ---------- */
+.chead { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.chead .mo { font-size: 44px; line-height: 1; }
+.chead .mid { flex: 1; min-width: 0; }
+.chead .nm { font-family: var(--f-display); font-size: 18px; }
+.dots { display: flex; gap: 6px; margin-top: 6px; }
+.dots i { flex: 1; height: 10px; border-radius: 6px; background: rgba(0, 0, 0, .35); border: 1.5px solid var(--line); }
+.dots i.on { background: linear-gradient(90deg, var(--good), #8cf5bf); border-color: transparent; }
+.dots i.cur { background: var(--gold); border-color: transparent; animation: curp .6s infinite alternate; }
+.boss .mo { animation: bob 2s infinite; }
+.boss.hit .mo { animation: shake .4s; }
+.q { display: flex; flex-direction: column; gap: 12px; }
+.qtop { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.qtype { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+.mini { min-width: 40px; height: 36px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); font-size: 18px; }
+.prompt { font-size: clamp(21px, 5.6vw, 27px); line-height: 1.12; }
+.stmt { padding: 14px; border-radius: 16px; background: var(--card2); border: 2px solid var(--line); font-size: 19px; line-height: 1.35; user-select: text; -webkit-user-select: text; }
+.stmt mark { background: color-mix(in srgb, var(--gold) 55%, transparent); color: #fff; border-radius: 6px; padding: 1px 4px; box-shadow: 0 0 0 2px var(--gold); }
+.opts { display: flex; flex-direction: column; gap: 10px; }
+.opts.r1 { flex-direction: row; }
+.opts.g2 { display: grid; grid-template-columns: 1fr 1fr; }
+.opts.r1 .opt { flex: 1; justify-content: center; text-align: center; }
+.opt { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 12px 16px; border-radius: 18px; border: 2px solid var(--line); background: var(--card); font-size: 18px; text-align: left; box-shadow: 0 4px 0 rgba(0, 0, 0, .3); line-height: 1.25; }
+.opt.long { font-size: 17px; align-items: flex-start; }
+.opt:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, .3); }
+.opt .ob { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; font-family: var(--f-display); background: var(--oc, rgba(255, 255, 255, .2)); color: #fff; flex: none; text-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+.opt.right { background: rgba(53, 224, 138, .25); border-color: var(--good); }
+.opt.wrong { background: rgba(255, 93, 115, .2); border-color: var(--bad); animation: shakeb .3s; pointer-events: none; opacity: .75; }
+.opt.gone { opacity: .22; pointer-events: none; }
+@keyframes shakeb { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.fb { margin-top: 12px; padding: 14px; border-radius: 18px; border: 2px solid var(--line); background: var(--card2); }
+.fb.ok { border-color: var(--good); background: rgba(53, 224, 138, .13); }
+.fb.no { border-color: var(--bad); background: rgba(255, 93, 115, .12); }
+.fb h3 { font-size: 20px; margin-bottom: 4px; }
+.fb p { margin: 0; font-size: 16px; }
+.fb .btn { width: 100%; margin-top: 12px; }
+.chbar { display: flex; justify-content: center; margin-top: 14px; }
+.bk { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.chip { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 14px; background: rgba(0, 0, 0, .25); border: 2px solid var(--c, var(--line)); font-size: 14.5px; line-height: 1.25; }
+.chip b { flex: none; width: 26px; height: 26px; border-radius: 8px; background: var(--c, #666); display: grid; place-items: center; font-family: var(--f-display); font-weight: 400; color: #fff; text-shadow: 0 1px 0 rgba(0, 0, 0, .4); }
+.chip.miss { border-style: dashed; opacity: .85; background: rgba(255, 93, 115, .1); }
+.chip.warn { border-color: var(--warn); background: rgba(255, 184, 74, .12); }
+.chip.bad { border-color: var(--bad); background: rgba(255, 93, 115, .14); }
+/* tocar partes */
+.segs { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg { padding: 10px 12px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); font-size: 17px; text-align: left; line-height: 1.25; }
+.seg.right { border-color: var(--good); background: rgba(53, 224, 138, .25); }
+.seg.wrong { border-color: var(--bad); background: rgba(255, 93, 115, .2); animation: shakeb .3s; }
+.seg.pulse { animation: curp .5s 4 alternate; border-color: var(--gold); }
+.seg .sl { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; margin-right: 6px; font-family: var(--f-display); font-size: 14px; color: #fff; background: var(--c); vertical-align: 1px; }
+/* forja */
+.preview { padding: 12px; border-radius: 16px; background: var(--card2); border: 2px solid var(--line); font-size: 16px; line-height: 1.45; min-height: 64px; }
+.preview .pv { padding: 1px 5px; border-radius: 6px; background: color-mix(in srgb, var(--c) 35%, transparent); box-shadow: inset 0 -2px 0 var(--c); }
+.preview .pe { opacity: .55; }
+.slot { padding: 10px; border-radius: 16px; border: 2px solid var(--line); background: var(--card); display: flex; flex-direction: column; gap: 8px; }
+.slot.bad { border-color: var(--bad); }
+.slot.okk { border-color: var(--good); }
+.slot .sh2 { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.slot .sh2 b { width: 26px; height: 26px; border-radius: 8px; background: var(--c); color: #fff; display: grid; place-items: center; font-family: var(--f-display); font-weight: 400; }
+.slot .ch { display: flex; flex-direction: column; gap: 6px; }
+.pc { padding: 9px 12px; border-radius: 12px; border: 2px solid var(--line); background: rgba(0, 0, 0, .2); text-align: left; font-size: 15.5px; line-height: 1.25; }
+.pc.pick { border-color: var(--c); background: color-mix(in srgb, var(--c) 28%, transparent); }
+.pc.gone { opacity: .25; }
+.slot.fixed .pc { border-style: dashed; opacity: .85; }
+/* parejas */
+.mgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+.mi { padding: 10px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); font-size: 15.5px; min-height: 54px; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.2; }
+.mi.sel { border-color: var(--gold); background: rgba(255, 210, 74, .22); }
+.mi.done { border-color: var(--good); background: rgba(53, 224, 138, .22); pointer-events: none; }
+.mi.wrong { border-color: var(--bad); animation: shakeb .3s; }
+/* ordenar */
+.ord { display: flex; flex-direction: column; gap: 8px; }
+.oslot { min-height: 46px; padding: 8px 12px; border-radius: 14px; border: 2px dashed var(--line); display: flex; gap: 10px; align-items: center; font-size: 16px; }
+.oslot b { width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, .14); display: grid; place-items: center; font-family: var(--f-display); font-weight: 400; flex: none; }
+.oslot.full { border-style: solid; border-color: var(--good); background: rgba(53, 224, 138, .16); }
+.opool { display: flex; flex-wrap: wrap; gap: 8px; }
+.opool .pc { text-align: center; }
+.pc.shk { animation: shakeb .3s; border-color: var(--bad); }
+.mgrid .col { gap: 8px; }
+/* ahorcado */
+.hearts { text-align: center; font-size: 26px; letter-spacing: 4px; }
+.word { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.word span { width: 34px; height: 44px; border-bottom: 4px solid var(--gold); display: grid; place-items: center; font-family: var(--f-display); font-size: 28px; }
+.kb { display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; }
+.key { min-height: 40px; border-radius: 10px; border: 2px solid var(--line); background: var(--card); font-family: var(--f-display); font-size: 18px; padding: 0; }
+.key.hit { background: rgba(53, 224, 138, .3); border-color: var(--good); pointer-events: none; }
+.key.miss { background: rgba(255, 93, 115, .25); border-color: var(--bad); opacity: .5; pointer-events: none; }
+.clue { text-align: center; font-size: 17px; color: var(--muted); }
+
+/* ---------- Ventanas ---------- */
+#overlay { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; padding: 16px; padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); background: rgba(5, 7, 28, .72); backdrop-filter: blur(4px); }
+#overlay.on { display: flex; }
+.modal { width: 100%; max-width: 520px; max-height: 100%; overflow-y: auto; border-radius: 26px; padding: 20px; background: linear-gradient(170deg, #232a73, #121643); border: 3px solid var(--line); box-shadow: 0 20px 60px rgba(0, 0, 0, .6); animation: mpop .28s cubic-bezier(.3, 1.4, .5, 1); user-select: text; -webkit-user-select: text; }
+@keyframes mpop { from { scale: .85; opacity: 0; } }
+.modal h2 { font-size: 28px; margin-bottom: 6px; text-align: center; }
+.modal .sub { text-align: center; color: var(--muted); margin: 0 0 12px; }
+.modal .acts { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.zafi { display: flex; gap: 12px; align-items: flex-start; }
+.zafi .face { flex: none; width: 58px; height: 58px; }
+.bubble { position: relative; flex: 1; min-width: 0; padding: 12px 14px; border-radius: 18px; background: rgba(255, 255, 255, .1); border: 2px solid var(--line); font-size: 16.5px; line-height: 1.4; }
+.bubble ul, .bubble ol { margin: 6px 0 0; padding-left: 20px; }
+.bubble li { margin: 3px 0; }
+.bubble h3 { font-size: 21px; margin-bottom: 6px; color: var(--gold); }
+.cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.cmp.three { grid-template-columns: 1fr; }
+.cmp > div { padding: 10px; border-radius: 14px; font-size: 15px; line-height: 1.3; }
+.cmp small { display: block; font-size: 11px; letter-spacing: .08em; margin-bottom: 4px; opacity: .85; font-weight: 600; }
+.cmp .bad { background: rgba(255, 93, 115, .16); border: 2px solid rgba(255, 93, 115, .5); }
+.cmp .good { background: rgba(53, 224, 138, .16); border: 2px solid rgba(53, 224, 138, .55); }
+@media (max-width: 420px) { .cmp { grid-template-columns: 1fr; } }
+.pager { display: flex; justify-content: center; gap: 6px; margin: 12px 0 0; }
+.pager i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, .25); }
+.pager i.on { background: var(--gold); }
+.starsbig { display: flex; justify-content: center; gap: 8px; font-size: 54px; line-height: 1; margin: 6px 0 4px; }
+.starsbig span { filter: grayscale(1) brightness(.5); transition: all .3s; }
+.starsbig span.on { filter: none; animation: spawn .6s; text-shadow: 0 0 20px var(--gold); }
+.sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
+.sum div { text-align: center; padding: 8px 4px; border-radius: 14px; background: var(--card2); border: 2px solid var(--line); }
+.sum b { display: block; font-family: var(--f-display); font-weight: 400; font-size: 22px; }
+.sum small { color: var(--muted); font-size: 12px; }
+.fact { padding: 10px 12px; border-radius: 14px; background: rgba(255, 210, 74, .12); border: 1.5px dashed rgba(255, 210, 74, .55); font-size: 15px; margin-top: 8px; }
+.lcards { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 14px; }
+.lcard { display: flex; gap: 12px; padding: 10px; border-radius: 16px; background: var(--card2); border: 2px solid var(--c); align-items: flex-start; }
+.lcard .gi { flex: none; --s: 46px; }
+.lcard h4 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 19px; }
+.lcard p { margin: 2px 0 0; font-size: 14.5px; line-height: 1.3; }
+.lcard small { color: var(--muted); }
+details { border-radius: 16px; border: 2px solid var(--line); background: var(--card); padding: 8px 12px; margin-bottom: 8px; }
+summary { cursor: pointer; font-family: var(--f-display); font-size: 18px; min-height: 36px; display: flex; align-items: center; }
+details[open] summary { margin-bottom: 6px; }
+.tgl { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; background: var(--card); border: 2px solid var(--line); font-size: 17px; }
+.sw { width: 54px; height: 30px; border-radius: 16px; background: rgba(0, 0, 0, .4); border: 2px solid var(--line); position: relative; flex: none; padding: 0; }
+.sw::after { content: ""; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s; }
+.sw.on { background: var(--good); }
+.sw.on::after { transform: translateX(24px); }
+textarea.code { width: 100%; min-height: 78px; border-radius: 14px; border: 2px solid var(--line); background: var(--card2); color: var(--ink); font: 13px/1.3 ui-monospace, Menlo, Consolas, monospace; padding: 8px; resize: vertical; user-select: text; -webkit-user-select: text; }
+#toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(30px); opacity: 0; z-index: 90; padding: 10px 18px; border-radius: 16px; background: #fff; color: #1b1b3a; font-weight: 600; transition: all .3s; pointer-events: none; max-width: 90vw; text-align: center; }
+#toast.on { opacity: 1; transform: translateX(-50%); }
+.fade { animation: fadein .25s; }
+@keyframes fadein { from { opacity: 0; transform: translateY(8px); } }
+table.tb { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.tbw { overflow-x: auto; border-radius: 14px; border: 2px solid var(--line); }
+.tb th, .tb td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tb th { color: var(--gold); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* ---------- Defensa SMART ---------- */
+.tdhud { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin-bottom: 8px; }
+.tdhearts { font-size: 20px; letter-spacing: 1px; white-space: nowrap; }
+.tdprog { text-align: center; font-family: var(--f-display); font-size: 17px; font-variant-numeric: tabular-nums; }
+.tdprog b { color: var(--gold); font-weight: 400; }
+.ener { display: flex; align-items: center; gap: 4px; width: 112px; }
+.ener .bar { flex: 1; height: 14px; border-radius: 99px; background: rgba(0, 0, 0, .35); border: 2px solid var(--line); overflow: hidden; }
+.ener .bar i { display: block; height: 100%; width: 100%; border-radius: 99px; background: linear-gradient(90deg, #ffd24a, #ff9a1f); transition: width .12s linear; }
+.tdf { position: relative; height: clamp(330px, calc(100dvh - 312px), 470px); border-radius: 22px; border: 2px solid var(--line); background: linear-gradient(180deg, rgba(0, 0, 0, .18), rgba(0, 0, 0, .4)); overflow: hidden; touch-action: manipulation; }
+.tdbase { position: absolute; left: 0; right: 0; bottom: 0; height: 22px; display: grid; place-items: center; background: repeating-linear-gradient(90deg, rgba(255, 210, 74, .35) 0 14px, rgba(255, 210, 74, .12) 14px 28px); border-top: 2px dashed var(--gold); font-family: var(--f-display); font-size: 12px; letter-spacing: .14em; color: var(--gold); z-index: 2; }
+.en { position: absolute; left: 8px; right: 8px; top: calc(var(--y, 0) * (100% - 118px - 22px)); height: 104px; padding: 8px 10px; border-radius: 16px; background: linear-gradient(180deg, #fff6df, #ffe7b0); color: #2b1600; border: 3px solid #b45f00; box-shadow: 0 4px 0 rgba(0, 0, 0, .35); display: flex; align-items: center; z-index: 3; cursor: pointer; transition: translate .1s; }
+.en .et { margin: 0; font-size: clamp(12px, 3.3vw, 13.5px); line-height: 1.2; font-weight: 500; text-wrap: pretty; overflow-wrap: anywhere; }
+.en.sel { border-color: #1f8fff; box-shadow: 0 0 0 3px #1f8fff, 0 4px 0 rgba(0, 0, 0, .35); }
+.en.boss { background: linear-gradient(180deg, #ffd9e0, #ffb0c0); border-color: #a1203d; padding-top: 22px; }
+.en.boss .bn { position: absolute; top: 2px; left: 10px; font-family: var(--f-display); font-size: 13px; color: #a1203d; }
+.en.elite { border-color: #7a2aa0; }
+.en .eb { position: absolute; right: 10px; bottom: -11px; display: flex; gap: 3px; }
+.en .bd { width: 22px; height: 22px; border-radius: 7px; background: var(--c); color: #fff; font-family: var(--f-display); font-size: 14px; display: grid; place-items: center; border: 2px solid #fff; text-shadow: 0 1px 0 rgba(0, 0, 0, .4); animation: spawn .3s; }
+.en.hit { filter: brightness(1.15); }
+.en.shk { animation: shakeb .4s; }
+.en.conv { background: linear-gradient(180deg, #d6ffe8, #8df0b9); border-color: #14935a; animation: tdconv .8s forwards; pointer-events: none; }
+.en.conv .et::before { content: "✔ ¡SMART! "; font-weight: 600; color: #0b6b3f; }
+.en.gone { animation: tdgone .5s forwards; pointer-events: none; }
+@keyframes tdconv { 30% { scale: 1.04; } 100% { translate: 60% 0; opacity: 0; } }
+@keyframes tdgone { 100% { scale: .8; opacity: 0; filter: grayscale(1); } }
+.tdmsg { height: 56px; margin-bottom: 6px; padding: 4px 10px; border-radius: 12px; font-size: 13px; line-height: 1.2; background: rgba(10, 14, 48, .6); border: 2px solid var(--line); display: flex; align-items: center; overflow: hidden; opacity: .55; }
+.tdmsg:empty::before { content: "Lee la meta y toca la letra que le falta"; color: var(--muted); }
+.tdmsg.on { opacity: 1; }
+.tdmsg > span { display: block; max-height: 100%; overflow: hidden; }
+.tdmsg.ok { border-color: var(--good); }
+.tdmsg.bad { border-color: var(--bad); }
+.tdfx { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
+.proj { position: absolute; left: var(--sx); top: calc(100% - 30px); width: 30px; height: 30px; margin-left: -15px; margin-top: -15px; border-radius: 50%; background: var(--c); color: #fff; font-family: var(--f-display); display: grid; place-items: center; box-shadow: 0 0 14px var(--c); animation: shoot .3s ease-in forwards; }
+@keyframes shoot { to { left: 50%; top: var(--ey); scale: .6; opacity: .5; } }
+.tdbar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+.tdt { min-height: 64px; border-radius: 16px; border: 0; background: var(--c); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; box-shadow: 0 5px 0 rgba(0, 0, 0, .35), inset 0 3px 0 rgba(255, 255, 255, .3); transition: transform .08s, filter .15s; padding: 4px 2px; }
+.tdt b { font-family: var(--f-display); font-weight: 400; font-size: 30px; line-height: 1; text-shadow: 0 2px 0 rgba(0, 0, 0, .35); }
+.tdt small { font-size: 10.5px; line-height: 1.05; text-shadow: 0 1px 0 rgba(0, 0, 0, .4); max-width: 100%; overflow-wrap: anywhere; text-align: center; }
+.tdt:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+.tdt.dim { filter: grayscale(.6) brightness(.8); }
+#tdl.off { opacity: .45; }
+.en.nx:not(.sel) { outline: 3px dashed rgba(31, 143, 255, .85); outline-offset: 2px; }
+
+</style>
+<div id="sky" aria-hidden="true"></div>
+<div id="app"><div id="top"></div><main id="screen"></main></div>
+<div id="overlay"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+"use strict";
+/* ============================================================
+   SMART QUEST · datos pedagógicos
+   Basado en la clase «Metas SMART · Fintech» (Drucker 1954, Doran 1981)
+   ============================================================ */
+
+const LK = ["S", "M", "A", "R", "T"];
+
+const LET = {
+  S: {
+    k: "S", name: "Específica", en: "Specific", orig: "Specific", emoji: "🎯", color: "#ff4d6d",
+    key: "¿Qué, quién, con qué y para qué?",
+    rule: "Dice exactamente QUÉ quieres lograr, con qué herramienta y para qué.",
+    tapQ: "¿QUÉ voy a hacer exactamente? (la parte específica)",
+    yn: "¿Esta meta es específica?", adj: "específica"
+  },
+  M: {
+    k: "M", name: "Medible", en: "Measurable", orig: "Measurable", emoji: "📏", color: "#3b9bff",
+    key: "¿Cuál es el indicador y el número?",
+    rule: "Tiene un indicador (lo que cuentas) y un valor (cuánto). Se comprueba con datos, no con sensaciones.",
+    tapQ: "¿CUÁNTO? (la parte medible, con número)",
+    yn: "¿Esta meta es medible?", adj: "medible"
+  },
+  A: {
+    k: "A", name: "Alcanzable", en: "Achievable", orig: "Assignable", emoji: "🧗", color: "#2fd07a",
+    key: "¿Es posible con mis recursos reales?",
+    rule: "Exige esfuerzo, pero es posible con el tiempo, el dinero y las herramientas que de verdad tienes.",
+    tapQ: "¿CÓMO lo voy a lograr? (la parte alcanzable)",
+    yn: "¿Esta meta es alcanzable?", adj: "alcanzable"
+  },
+  R: {
+    k: "R", name: "Relevante", en: "Relevant", orig: "Realistic", emoji: "💛", color: "#ff9a1f",
+    key: "¿A qué propósito mayor me acerca?",
+    rule: "Te importa de verdad y te acerca a algo que valoras. Prueba: «esta meta me acerca a ___».",
+    tapQ: "¿PARA QUÉ me sirve? (la parte relevante)",
+    yn: "¿Esta meta es relevante?", adj: "relevante"
+  },
+  T: {
+    k: "T", name: "Tiempo determinado", en: "Time-bound", orig: "Time-related", emoji: "⏳", color: "#b36bff",
+    key: "¿Para cuándo, con qué hitos?",
+    rule: "Tiene fecha límite y, si es larga, hitos intermedios. «Algún día» significa «nunca».",
+    tapQ: "¿PARA CUÁNDO? (la parte con tiempo)",
+    yn: "¿Esta meta tiene tiempo determinado?", adj: "con tiempo determinado"
+  }
+};
+
+const WORLDS = [
+  { id: 0, name: "Isla de los Deseos", short: "Deseo vs. meta", emoji: "🏝️", focus: null,
+    boss: "Fantasma Deseo", bossEmoji: "👻", g: ["#1c3b8f", "#0b1b4d"], glow: "#4fd1ff",
+    blurb: "Aprende la diferencia entre un deseo, una meta normal y una meta SMART." },
+  { id: 1, name: "Valle Específico", short: "S · Específica", emoji: "🎯", focus: "S",
+    boss: "Gigante Vago", bossEmoji: "🗿", g: ["#7a1d4f", "#2d0b2e"], glow: "#ff4d6d",
+    blurb: "Mundo de la S: ¿qué, quién, con qué y para qué?" },
+  { id: 2, name: "Montaña Medible", short: "M · Medible", emoji: "📏", focus: "M",
+    boss: "Mago Mucho-Poco", bossEmoji: "🧙", g: ["#144a8f", "#071a45"], glow: "#3b9bff",
+    blurb: "Mundo de la M: indicador, línea base y valor meta." },
+  { id: 3, name: "Bosque Alcanzable", short: "A · Alcanzable", emoji: "🌲", focus: "A",
+    boss: "Dragón Imposible", bossEmoji: "🐉", g: ["#126a45", "#052a22"], glow: "#2fd07a",
+    blurb: "Mundo de la A: el estiramiento justo, ni fácil ni imposible." },
+  { id: 4, name: "Ciudad Relevante", short: "R · Relevante", emoji: "🏙️", focus: "R",
+    boss: "Murciélago Sin-Sentido", bossEmoji: "🦇", g: ["#8a4a0b", "#2e1706"], glow: "#ff9a1f",
+    blurb: "Mundo de la R: ¿de verdad te importa esta meta?" },
+  { id: 5, name: "Desierto del Tiempo", short: "T · Tiempo", emoji: "🏜️", focus: "T",
+    boss: "Perezoso Algún-Día", bossEmoji: "🦥", g: ["#5a2aa0", "#1c0b3e"], glow: "#b36bff",
+    blurb: "Mundo de la T: fechas límite e hitos intermedios." },
+  { id: 6, name: "Laboratorio Fintech", short: "Las 5 letras + fintech", emoji: "🧪", focus: null,
+    boss: "Robot Gasto-Hormiga", bossEmoji: "🤖", g: ["#0d6a7a", "#04252e"], glow: "#27e0d0",
+    blurb: "Detecta qué letra falta y descubre KPI, datos y gamificación." },
+  { id: 7, name: "Castillo SMART", short: "Maestría final", emoji: "🏰", focus: null,
+    boss: "Rey Quizás", bossEmoji: "👑", g: ["#6b2b8f", "#1a0b33"], glow: "#ffd24a",
+    blurb: "Forja metas SMART completas y demuestra que eres un maestro." },
+  { id: 8, name: "Fortaleza de las Letras", short: "Defensa · Letras", emoji: "🏯", focus: null, td: 1,
+    boss: "Gigante Vago II", bossEmoji: "🗿", g: ["#0f5a66", "#06222b"], glow: "#4fd1ff",
+    blurb: "¡Defensa! Convierte metas normales en SMART con tus torres de letras." },
+  { id: 9, name: "Muralla del Dinero", short: "Defensa · Fintech", emoji: "💰", focus: null, td: 1,
+    boss: "Bruja Gasto-Hormiga", bossEmoji: "🧙‍♀️", g: ["#7a5a0b", "#2b1c04"], glow: "#ffd24a",
+    blurb: "Defensa fintech: ahorros, tarjetas y apps bajo ataque de metas vagas." },
+  { id: 10, name: "Bahía de los Impostores", short: "Defensa · Impostores", emoji: "🏴‍☠️", focus: null, td: 1,
+    boss: "Capitán Sin-Fecha", bossEmoji: "🦜", g: ["#5a1d4f", "#220a24"], glow: "#ff6bd6",
+    blurb: "¡Cuidado! Entre las metas vagas viajan metas SMART. No las ataques." },
+  { id: 11, name: "Torre del Rey Vago", short: "Defensa · Final", emoji: "🗼", focus: null, td: 1,
+    boss: "Rey Vago", bossEmoji: "🤴", g: ["#3a2a8f", "#0f0a33"], glow: "#b36bff",
+    blurb: "La defensa final: oleadas rápidas, varias letras faltantes y el Rey Vago." }
+];
+
+/* Frases débiles genéricas (sirven de distractores) */
+const WEAK = {
+  S: ["Voy a ser mejor en general", "Quiero hacer algo importante", "Voy a mejorar en cosas"],
+  M: ["muchas veces", "lo más que pueda", "bastante seguido", "de vez en cuando"],
+  A: ["aunque no tenga tiempo ni ayuda", "haciéndolo todo de golpe y sin descansar", "sin práctica ni ayuda de nadie"],
+  R: ["porque sí", "sin saber para qué", "porque me dio la gana"],
+  T: ["algún día", "cuando tenga ganas", "en el futuro", "pronto"]
+};
+
+/* ---------- Escenarios: deseo, y la meta SMART dividida en 5 partes ----------
+   Meta SMART = S, M, A, R, T unidos con comas.
+   xM / xT = versión imposible del número y del plazo (para mostrar qué NO es alcanzable) */
+const SC = [
+  { id: "bici", fin: 1, vague: "Quiero ahorrar más.",
+    S: "Voy a ahorrar en mi hucha digital para una bicicleta", M: "$200.000 en total",
+    A: "apartando un poco de mi mesada cada semana", R: "para ir al colegio sin depender del bus",
+    T: "antes del 15 de diciembre", xM: "$20.000.000 en total", xT: "en solo dos días" },
+  { id: "domicilios", fin: 1, vague: "Quiero gastar menos en domicilios.",
+    S: "Voy a reducir mis pedidos de comida a domicilio", M: "de 8 a 4 al mes",
+    A: "cocinando en casa algunas cenas", R: "para liberar plata para mi ahorro",
+    T: "durante los próximos dos meses", xM: "de 8 a cero para siempre", xT: "desde hoy hasta mañana" },
+  { id: "inversion", fin: 1, vague: "Quiero empezar a invertir.",
+    S: "Voy a invertir en un fondo de bajo riesgo desde la app", M: "$50.000 cada quincena",
+    A: "usando una parte de lo que me sobra del presupuesto", R: "para hacer crecer mi dinero a largo plazo",
+    T: "durante 6 meses", xM: "$5.000.000 cada quincena", xT: "en la primera semana" },
+  { id: "billetera", fin: 1, vague: "Quiero organizar mi dinero.",
+    S: "Voy a registrar mis gastos en la billetera digital", M: "el 100% de ellos",
+    A: "dedicándole un ratico cada noche", R: "para saber a dónde se va mi plata",
+    T: "durante todo el mes de marzo", xM: "hasta la última moneda de todo el año", xT: "en una sola tarde" },
+  { id: "compu", fin: 1, vague: "Quiero un computador.",
+    S: "Voy a ahorrar para comprar un computador para estudiar", M: "$1.800.000 en total",
+    A: "con una transferencia automática a mi hucha cada semana", R: "para hacer mis trabajos y aprender a programar",
+    T: "en 9 meses", xM: "$180.000.000 en total", xT: "en una semana" },
+  { id: "emergencia", fin: 1, vague: "Quiero estar tranquilo con mi plata.",
+    S: "Voy a armar un fondo de emergencia", M: "de $900.000",
+    A: "apartando algo de cada ingreso que reciba", R: "para no endeudarme si algo se daña",
+    T: "antes de que termine el año", xM: "de $90.000.000", xT: "en dos días" },
+  { id: "hormiga", fin: 1, vague: "Quiero gastar menos en cosas pequeñas.",
+    S: "Voy a eliminar los gastos hormiga en dulces y snacks", M: "de $60.000 a $20.000 al mes",
+    A: "llevando fruta y snacks de casa", R: "para guardar ese dinero en mi ahorro",
+    T: "durante los próximos tres meses", xM: "de $60.000 a $0 sin comprar nada nunca", xT: "desde hoy hasta mañana" },
+  { id: "racha", fin: 1, vague: "Quiero ahorrar todos los días.",
+    S: "Voy a mantener una racha de ahorro en mi app", M: "30 días seguidos",
+    A: "apartando una monedita cada día", R: "para crear el hábito de ahorrar",
+    T: "durante todo el mes de junio", xM: "3.000 días seguidos", xT: "en una semana" },
+  { id: "suscripciones", fin: 1, vague: "Quiero pagar menos en suscripciones.",
+    S: "Voy a cancelar las suscripciones que no uso", M: "2 de las 4 que tengo",
+    A: "revisando mi app bancaria cada domingo", R: "para ahorrar ese dinero para mi viaje",
+    T: "antes del próximo cobro", xM: "las 400 que tengo", xT: "en un minuto" },
+  { id: "viaje", fin: 1, vague: "Quiero viajar.",
+    S: "Voy a ahorrar para el viaje de fin de año escolar", M: "$2.400.000 en total",
+    A: "con un apartado automático cada quincena", R: "para disfrutar con mis compañeros",
+    T: "en 12 meses", xM: "$240.000.000 en total", xT: "en dos semanas" },
+  { id: "mesada", fin: 1, vague: "Quiero manejar mejor mi mesada.",
+    S: "Voy a dividir mi mesada entre ahorro y gastos", M: "con 10% para ahorrar",
+    A: "separando el ahorro apenas la recibo", R: "para tener mi propio colchón de dinero",
+    T: "durante todo el semestre", xM: "con 99% para ahorrar y casi nada para vivir", xT: "este mismo día" },
+  { id: "pulseras", fin: 1, vague: "Quiero vender más.",
+    S: "Voy a vender pulseras en la feria del colegio", M: "30 pulseras",
+    A: "fabricándolas con material que ya tengo y la ayuda de mis amigos", R: "para pagar la excursión de mi curso",
+    T: "antes de la feria del 12 de noviembre", xM: "3.000 pulseras", xT: "en una hora" },
+  { id: "presupuesto", fin: 1, vague: "Quiero controlar mis gastos.",
+    S: "Voy a revisar mi presupuesto en la app", M: "todos los viernes",
+    A: "con alertas automáticas en el celular", R: "para corregir el rumbo a tiempo",
+    T: "hasta que termine el año", xM: "cada cinco minutos", xT: "hoy mismo" },
+  { id: "deuda", fin: 1, vague: "Quiero pagar mi deuda.",
+    S: "Voy a pagarle a mi hermano lo que le debo", M: "$40.000 en cuotas iguales",
+    A: "usando una parte de mi mesada", R: "para cumplir mi palabra",
+    T: "antes de que termine el mes", xM: "$4.000.000 en una sola cuota", xT: "mañana" },
+  { id: "churn", fin: 1, vague: "Quiero que más gente use nuestra app.",
+    S: "Voy a lograr que más usuarios sigan usando nuestra app", M: "bajando el churn mensual de 5% a 4%",
+    A: "con recordatorios y mejoras en la primera pantalla", R: "para que nuestro emprendimiento crezca",
+    T: "en seis meses", xM: "bajando el churn mensual de 5% a 0%", xT: "en una semana" },
+  { id: "redondeo", fin: 1, vague: "Quiero juntar plata sin darme cuenta.",
+    S: "Voy a activar el redondeo de compras en mi app", M: "para juntar $30.000",
+    A: "sin cambiar mis hábitos de compra", R: "para tener una sorpresa de cumpleaños",
+    T: "en tres meses", xM: "para juntar $3.000.000", xT: "en dos días" },
+  { id: "libros", vague: "Quiero leer más.",
+    S: "Voy a leer libros de aventuras", M: "5 en total",
+    A: "leyendo un rato cada noche después de la tarea", R: "para mejorar mi comprensión lectora",
+    T: "antes de que termine este mes", xM: "40 en total", xT: "en una sola semana" },
+  { id: "tablas", vague: "Quiero aprender matemáticas.",
+    S: "Voy a memorizar las tablas de multiplicar", M: "con 9 respuestas correctas de cada 10",
+    A: "repasando con tarjetas después de merendar", R: "para resolver los problemas más rápido",
+    T: "antes del examen de matemáticas", xM: "con 100 respuestas correctas de cada 100 sin repasar", xT: "esta misma tarde" },
+  { id: "agua", vague: "Quiero estar sano.",
+    S: "Voy a tomar más agua durante el día", M: "6 vasos diarios",
+    A: "llevando mi botella a la escuela", R: "para sentirme con energía",
+    T: "durante todo este mes", xM: "40 vasos diarios", xT: "desde hoy hasta mañana" },
+  { id: "huerto", vague: "Quiero tener un huerto.",
+    S: "Voy a sembrar un huerto de tomates y lechugas", M: "con 6 plantas en total",
+    A: "usando macetas y tierra que tengo en casa", R: "para comer verduras frescas con mi familia",
+    T: "antes de que empiece el invierno", xM: "con 300 plantas en total", xT: "en una sola tarde" },
+  { id: "reciclaje", vague: "Quiero cuidar el planeta.",
+    S: "Voy a reciclar el plástico y el papel de mi casa", M: "llevando 1 bolsa llena cada semana",
+    A: "con cajas rotuladas en la cocina", R: "para ayudar a cuidar el planeta",
+    T: "durante todo el mes de abril", xM: "llevando 100 bolsas cada día", xT: "en un solo día" },
+  { id: "dibujo", vague: "Quiero dibujar mejor.",
+    S: "Voy a dibujar animales con lápiz y sombras", M: "un dibujo por semana",
+    A: "practicando después de hacer la tarea", R: "para participar en el concurso de arte de mi escuela",
+    T: "hasta el 20 de noviembre", xM: "20 dibujos por día", xT: "para mañana" },
+  { id: "natacion", vague: "Quiero nadar bien.",
+    S: "Voy a aprender a nadar estilo libre", M: "25 metros sin parar",
+    A: "yendo a clases con mi profesor", R: "para sentirme seguro en la piscina",
+    T: "antes de las vacaciones de verano", xM: "5 kilómetros sin parar", xT: "en una sola clase" },
+  { id: "ortografia", vague: "Quiero escribir mejor.",
+    S: "Voy a mejorar mi ortografía en los dictados", M: "con máximo 2 errores por dictado",
+    A: "repasando las palabras difíciles cada semana", R: "para escribir trabajos sin errores",
+    T: "al final de este bimestre", xM: "con cero errores en 100 dictados seguidos", xT: "en dos días" },
+  { id: "correr", vague: "Quiero tener más resistencia.",
+    S: "Voy a correr alrededor de la cancha", M: "6 vueltas sin parar",
+    A: "aumentando un poquito cada semana", R: "para rendir mejor en educación física",
+    T: "antes de la prueba física de diciembre", xM: "300 vueltas sin parar", xT: "en un solo día" },
+  { id: "cuento", vague: "Quiero escribir un cuento.",
+    S: "Voy a escribir un cuento de misterio", M: "de 2 páginas",
+    A: "escribiendo un párrafo cada tarde", R: "para participar en el taller de escritura",
+    T: "antes del 30 de septiembre", xM: "de 500 páginas", xT: "en una tarde" },
+  { id: "scratch", vague: "Quiero aprender a programar.",
+    S: "Voy a crear un juego sencillo en Scratch", M: "con 3 niveles",
+    A: "siguiendo tutoriales y pidiendo ayuda a mi profesor", R: "para aprender a programar",
+    T: "antes de las vacaciones de invierno", xM: "con 500 niveles", xT: "en una tarde" },
+  { id: "ajedrez", vague: "Quiero ganar en ajedrez.",
+    S: "Voy a practicar ajedrez", M: "jugando 3 partidas por semana",
+    A: "con mi hermano y en el club de la escuela", R: "para ganar el torneo escolar",
+    T: "hasta el torneo de octubre", xM: "jugando 40 partidas al día", xT: "en un día" },
+  { id: "oral", vague: "Quiero perder el miedo a hablar en público.",
+    S: "Voy a practicar exposiciones orales", M: "3 veces frente a mi clase",
+    A: "ensayando antes frente al espejo y con mi familia", R: "para expresar mis ideas con confianza",
+    T: "hasta el final del trimestre", xM: "100 veces en un día", xT: "en una mañana" },
+  { id: "ciencias", vague: "Quiero ganar la feria de ciencias.",
+    S: "Voy a hacer un experimento sobre volcanes", M: "con 3 pruebas y una tabla de resultados",
+    A: "usando materiales de casa y la ayuda de mi maestra", R: "para aprender cómo funcionan los volcanes",
+    T: "antes de la feria del 12 de noviembre", xM: "con 300 pruebas", xT: "en una sola tarde" },
+  { id: "perro", vague: "Quiero cuidar mejor a mi perro.",
+    S: "Voy a pasear a mi perro por el parque", M: "4 veces por semana",
+    A: "saliendo después de hacer la tarea", R: "para que mi perro y yo hagamos ejercicio",
+    T: "durante todo el mes de mayo", xM: "30 veces por día", xT: "en una sola mañana" },
+  { id: "ingles", vague: "Quiero saber inglés.",
+    S: "Voy a aprender vocabulario en inglés", M: "30 palabras nuevas",
+    A: "estudiando con tarjetas ilustradas", R: "para hablar con mis primos de otro país",
+    T: "antes de las vacaciones", xM: "3.000 palabras nuevas", xT: "en un fin de semana" },
+  { id: "flauta", vague: "Quiero tocar un instrumento.",
+    S: "Voy a aprender a tocar la flauta", M: "3 canciones completas",
+    A: "practicando un rato después de la tarea", R: "para tocar en el festival del colegio",
+    T: "antes del festival de primavera", xM: "100 canciones difíciles", xT: "en dos días" },
+  { id: "baile", vague: "Quiero bailar mejor.",
+    S: "Voy a aprender un baile para el festival", M: "de 3 minutos completos",
+    A: "ensayando con mis compañeros en el recreo", R: "para participar con mi curso",
+    T: "antes del festival de otoño", xM: "de 3 horas sin parar", xT: "en un solo ensayo" },
+  { id: "casa", vague: "Quiero ayudar más en casa.",
+    S: "Voy a ayudar a lavar los platos", M: "3 días por semana",
+    A: "después de la cena junto a mi familia", R: "para colaborar con mi familia",
+    T: "durante todo el mes de agosto", xM: "20 veces por día", xT: "en un solo día" },
+  { id: "salto", vague: "Quiero ser más ágil.",
+    S: "Voy a mejorar saltando la cuerda", M: "hasta llegar a 50 saltos seguidos",
+    A: "practicando cada día en el recreo", R: "para tener más resistencia y energía",
+    T: "antes de que acabe el semestre", xM: "hasta llegar a 5.000 saltos seguidos", xT: "en dos días" }
+];
+
+/* ---------- Verdadero / Falso ---------- g: G general, F fintech, S M A R T letras ---------- */
+const TF = [
+  { g: "G", s: "«Quiero ahorrar más» es una meta SMART.", a: false, e: "Es un deseo: no dice cuánto, ni para qué, ni hasta cuándo." },
+  { g: "G", s: "Un deseo se convierte en meta cuando se le agregan número y fecha.", a: true, e: "«Ahorraré $200.000 este mes» ya se puede medir y comprobar." },
+  { g: "G", s: "Si una meta no se puede medir, tampoco se sabe si se cumplió.", a: true, e: "Nada se pudo medir, entonces nada se pudo cumplir." },
+  { g: "G", s: "El método SMART fue publicado por George T. Doran en 1981.", a: true, e: "Doran lo publicó en la revista Management Review en 1981." },
+  { g: "G", s: "Peter Drucker propuso en 1954 la «gestión por objetivos», una idea que inspiró a SMART.", a: true, e: "Drucker (1954) → Doran (1981): de la gestión por objetivos al método SMART." },
+  { g: "G", s: "SMART sirve solo para empresas y nunca para tu ahorro o tus estudios.", a: false, e: "Nació en empresas, pero la misma lógica sirve para tu ahorro, tus estudios y tus hábitos." },
+  { g: "G", s: "La versión original de SMART en inglés era: Specific, Measurable, Assignable, Realistic, Time-related.", a: true, e: "Hoy las lecturas más usadas son Alcanzable (Achievable) y Relevante (Relevant)." },
+  { g: "G", s: "Para que una meta sea SMART basta con que tenga fecha.", a: false, e: "Necesita las 5 características: S, M, A, R y T." },
+  { g: "G", s: "«Ahorraré $200.000 este mes» es una meta; «Quiero gastar menos» es un deseo.", a: true, e: "La meta tiene número y fecha; el deseo no." },
+  { g: "G", s: "Una meta normal puede ser un buen deseo, pero le faltan detalles para poder medirla.", a: true, e: "Por eso la afinamos con las 5 letras SMART." },
+  { g: "F", s: "Fintech viene de «finanzas» + «tecnología».", a: true, e: "Son apps y software que dan servicios financieros de forma digital, automática y medible." },
+  { g: "F", s: "En una app fintech cada toque deja un dato que sirve para medir.", a: true, e: "La app registra cuánto, cuándo y en qué gastas." },
+  { g: "F", s: "La tecnología fintech cambió lo que significa una meta.", a: false, e: "No cambió qué es una meta: cambió lo fácil que es medirla." },
+  { g: "F", s: "Un KPI es un número que una empresa vigila para saber si va hacia su objetivo.", a: true, e: "KPI = Key Performance Indicator (indicador clave). Es la «M» aplicada a un negocio." },
+  { g: "F", s: "El churn es el porcentaje de usuarios que abandonan la app en un periodo.", a: true, e: "Responde: ¿se quedan o se van?" },
+  { g: "F", s: "MAU significa «usuarios activos al mes».", a: true, e: "Responde: ¿de verdad usan la app?" },
+  { g: "F", s: "El NPS mide cuánto cuesta conseguir un cliente nuevo.", a: false, e: "Eso es el CAC. El NPS mide si recomendarían el servicio." },
+  { g: "F", s: "«Hice 10 transferencias» es un resultado, no una tarea.", a: false, e: "Es una tarea. «Ahorré $200.000» sí es un resultado." },
+  { g: "F", s: "Medir una sola vez, al final, sirve para corregir el rumbo a tiempo.", a: false, e: "Una medición periódica permite corregir mientras hay tiempo." },
+  { g: "F", s: "«1 millón de descargas» puede ser una métrica de vanidad si casi nadie usa la app.", a: true, e: "Pregunta: ¿este dato cambia una decisión?" },
+  { g: "F", s: "Gamificación es aplicar puntos, rachas e insignias a actividades que no son juego.", a: true, e: "Hace visible e inmediato el avance de la M." },
+  { g: "F", s: "La gamificación reemplaza la necesidad de tener una meta bien definida.", a: false, e: "El juego motiva, pero no reemplaza una meta bien definida." },
+  { g: "F", s: "SMARTER es SMART más Evaluar y Reajustar.", a: true, e: "Útil para metas largas: medir no basta, hay que revisar y corregir." },
+  { g: "S", s: "Una meta específica responde: ¿qué, quién, con qué y para qué?", a: true, e: "Esas son las 4 preguntas de la S." },
+  { g: "S", s: "«Voy a usar menos la tarjeta» es una meta específica.", a: false, e: "Es vaga. Falta qué compras, cuántas y con qué límite." },
+  { g: "S", s: "«Reduciré mis compras de comida rápida con tarjeta a máximo 2 por semana» es específica.", a: true, e: "Dice qué (comida rápida), con qué (tarjeta) y cuánto." },
+  { g: "S", s: "Entre más general sea una meta, más fácil es saber si la cumpliste.", a: false, e: "Al revés: lo general no se puede comprobar." },
+  { g: "S", s: "Una meta específica cabe en una frase sin ambigüedad.", a: true, e: "Si dos personas la entienden distinto, todavía no es específica." },
+  { g: "M", s: "Una meta medible tiene indicador, línea base y valor meta.", a: true, e: "Indicador (qué cuento) + línea base (dónde estoy hoy) + valor meta (a dónde llego)." },
+  { g: "M", s: "La línea base es mi punto de partida medido.", a: true, e: "Sin línea base no sé si mejoré." },
+  { g: "M", s: "«Ahorrar bastante» es una meta medible.", a: false, e: "«Bastante» no es un número. No se puede comprobar." },
+  { g: "M", s: "El indicador es la variable que voy a contar, por ejemplo el saldo de mi hucha.", a: true, e: "Es el número que cuenta tu progreso." },
+  { g: "M", s: "«Lo que no se mide, no se puede mejorar» es un principio clásico de la gestión.", a: true, e: "Por eso la M es la letra más importante de la clase." },
+  { g: "M", s: "El valor meta es el número destino al que quiero llegar.", a: true, e: "Ejemplo: bajar de $340.000 a $200.000." },
+  { g: "A", s: "Alcanzable significa que exige esfuerzo, pero es posible con tus recursos reales.", a: true, e: "Es la regla del estiramiento justo." },
+  { g: "A", s: "Con ingresos de $800.000 al mes, ahorrar $600.000 es un reto alcanzable.", a: false, e: "Es imposible. Ahorrar $80.000 (10%) sí es realista." },
+  { g: "A", s: "Una meta demasiado fácil es la mejor porque nunca frustra.", a: false, e: "Si es demasiado fácil no cambia nada y aburre." },
+  { g: "A", s: "Una meta imposible frustra y se abandona.", a: true, e: "La zona alcanzable está entre lo fácil y lo imposible." },
+  { g: "A", s: "En la versión original de Doran (1981), la A era Assignable (alguien responsable).", a: true, e: "Hoy se lee como Achievable (alcanzable)." },
+  { g: "R", s: "«Relevante» pregunta si la meta vale la pena para ti.", a: true, e: "Alcanzable pregunta si puedes; relevante pregunta si vale la pena." },
+  { g: "R", s: "Ahorrar «porque todos dicen que hay que ahorrar» es una meta muy relevante.", a: false, e: "Sin propósito propio, a la primera tentación se abandona." },
+  { g: "R", s: "La prueba de relevancia es completar: «esta meta me acerca a ___».", a: true, e: "Si no puedes completarla, la meta sobra." },
+  { g: "R", s: "Un fondo para no endeudarme si falla mi computador es una meta relevante.", a: true, e: "Tiene un propósito claro: proteger lo que te importa." },
+  { g: "T", s: "«Algún día» es una fecha límite válida para una meta SMART.", a: false, e: "«Algún día» significa «nunca». Hace falta una fecha." },
+  { g: "T", s: "Los hitos intermedios dividen una meta larga en pasos con fecha.", a: true, e: "Ejemplo: 25% cada trimestre en una meta de 12 meses." },
+  { g: "T", s: "La fecha crea urgencia y permite corregir el rumbo a tiempo.", a: true, e: "Obliga a priorizar y a revisar el avance." },
+  { g: "T", s: "En una meta de 12 meses con hitos trimestrales, el 50% llega en el mes 6.", a: true, e: "Mes 3: 25%, mes 6: 50%, mes 9: 75%, mes 12: 100%." },
+  { g: "T", s: "Las apps fintech pueden programar apartados automáticos cada quincena.", a: true, e: "En fintech la T es literal: la app te recuerda la fecha." }
+];
+
+/* ---------- Parejas ---------- */
+const MATCH = {
+  letters: { title: "Une cada letra con su nombre", pairs: [["S", "Específica"], ["M", "Medible"], ["A", "Alcanzable"], ["R", "Relevante"], ["T", "Tiempo determinado"]] },
+  questions: { title: "Une cada letra con su pregunta clave", pairs: [["Específica", "¿Qué, quién, con qué y para qué?"], ["Medible", "¿Cuál es el indicador y el número?"], ["Alcanzable", "¿Es posible con mis recursos reales?"], ["Relevante", "¿A qué propósito mayor me acerca?"], ["Tiempo determinado", "¿Para cuándo, con qué hitos?"]] },
+  english: { title: "Une el inglés con el español", pairs: [["Specific", "Específica"], ["Measurable", "Medible"], ["Achievable", "Alcanzable"], ["Relevant", "Relevante"], ["Time-bound", "Tiempo determinado"]] },
+  kpi: { title: "Une cada KPI fintech con lo que mide", pairs: [["CAC", "Costo de conseguir un cliente nuevo"], ["Churn", "% de usuarios que abandonan"], ["LTV", "Valor que deja un cliente en toda su relación"], ["MAU", "Usuarios activos al mes"], ["NPS", "Disposición a recomendar el servicio"]] },
+  fintech: { title: "Une cada app fintech con lo que hace", pairs: [["Billetera digital", "Pagos y transferencias desde el celular"], ["App de ahorro", "Huchas digitales y barras de progreso"], ["App de inversión", "Portafolios y rendimientos en tiempo real"], ["Gamificación", "Rachas, insignias y retos"]] },
+  history: { title: "Une cada año con su hecho", pairs: [["1954", "Drucker propone la gestión por objetivos"], ["1981", "Doran publica el método SMART"], ["Hoy", "Alcanzable y Relevante son las lecturas más usadas"]] },
+  method: { title: "Une cada paso del método con su pregunta", pairs: [["Indicador", "¿Qué número cuenta mi progreso?"], ["Línea base", "¿Dónde estoy hoy, con datos reales?"], ["Valor meta", "¿A qué número quiero llegar?"], ["Medición", "¿Cada cuánto reviso mi avance?"]] }
+};
+
+/* ---------- Ordenar ---------- */
+const ORDERS = [
+  { t: "Ordena el método de 4 pasos para volver medible una meta", items: ["Elige el indicador", "Mide tu línea base", "Fija el valor meta", "Programa la medición"], e: "Indicador → línea base → valor meta → medición programada." },
+  { t: "Ordena los hitos de una meta de ahorro de 12 meses", items: ["Inicio · $0", "Mes 3 · 25%", "Mes 6 · 50%", "Mes 9 · 75%", "Mes 12 · 100%"], e: "Los hitos trimestrales dividen la meta en pasos con fecha." },
+  { t: "Ordena la historia de SMART", items: ["1954 · Drucker propone la gestión por objetivos", "1981 · Doran publica SMART", "Hoy · Alcanzable y Relevante"], e: "Drucker (1954) → Doran (1981) → versión actual." },
+  { t: "Ordena las 5 letras de SMART", items: ["Específica", "Medible", "Alcanzable", "Relevante", "Tiempo determinado"], e: "S · M · A · R · T." },
+  { t: "Del deseo a la meta: ordena los pasos", items: ["Escribo mi deseo vago", "Le agrego un número", "Le agrego una fecha", "Programo cuándo reviso"], e: "El deseo no se borra: se le agregan número, medición y fecha." }
+];
+
+/* ---------- Ahorcado (palabras de la clase) ---------- */
+const HANG = [
+  { w: "DORAN", c: "Apellido de quien publicó SMART en la revista Management Review en 1981." },
+  { w: "DRUCKER", c: "Propuso la «gestión por objetivos» en 1954." },
+  { w: "AHORRO", c: "La meta financiera más común: huchas digitales y redondeo existen para lograrla." },
+  { w: "FINTECH", c: "Finanzas + tecnología." },
+  { w: "DATOS", c: "Cada toque en la app deja uno." },
+  { w: "INDICADOR", c: "La variable que cuentas para medir tu progreso." },
+  { w: "HITO", c: "Paso intermedio con fecha dentro de una meta larga." },
+  { w: "RACHA", c: "Días seguidos cumpliendo un hábito." },
+  { w: "HUCHA", c: "Alcancía digital donde apartas dinero." },
+  { w: "MEDIBLE", c: "La M de SMART." },
+  { w: "RELEVANTE", c: "La R de SMART: vale la pena para ti." },
+  { w: "ALCANZABLE", c: "La A de SMART: difícil, pero posible." },
+  { w: "ESPECIFICA", c: "La S de SMART: dice qué exactamente." },
+  { w: "TIEMPO", c: "La T de SMART: fecha límite." },
+  { w: "META", c: "Un deseo con número y fecha." },
+  { w: "CHURN", c: "KPI: porcentaje de usuarios que abandonan." },
+  { w: "PRESUPUESTO", c: "Plan de cuánto entra y cuánto gastas." },
+  { w: "SMART", c: "Método de metas con 5 letras." },
+  { w: "LOGRO", c: "Lo que celebras cuando cumples una meta." },
+  { w: "BILLETERA", c: "App para pagar y transferir desde el celular." }
+];
+
+/* ---------- ¿Tarea o resultado? ---------- */
+const TASKRES = [
+  { s: "Hice 10 transferencias.", a: "tarea" },
+  { s: "Ahorré $200.000.", a: "resultado" },
+  { s: "Leí 20 páginas.", a: "tarea" },
+  { s: "Bajé mi gasto en domicilios de $340.000 a $200.000.", a: "resultado" },
+  { s: "Abrí la app 15 veces.", a: "tarea" },
+  { s: "Mi hucha llegó a $150.000.", a: "resultado" },
+  { s: "Practiqué 10 tiros libres.", a: "tarea" },
+  { s: "Metí 8 de 10 tiros libres.", a: "resultado" },
+  { s: "Estudié una hora.", a: "tarea" },
+  { s: "Saqué 5,0 en el examen.", a: "resultado" },
+  { s: "Revisé mi presupuesto tres veces.", a: "tarea" },
+  { s: "Reduje mis gastos hormiga de $60.000 a $20.000.", a: "resultado" },
+  { s: "Mandé 30 mensajes a posibles clientes.", a: "tarea" },
+  { s: "Conseguí 12 clientes nuevos.", a: "resultado" }
+];
+
+/* ---------- Lecciones por mundo (diapositivas cortas) ---------- */
+const LESSONS = [
+  [ // 0 Isla de los Deseos
+    { t: "Un deseo no es una meta", h: "«Quiero ahorrar más» es un <b>deseo</b>: no dice cuánto, ni para qué, ni hasta cuándo.<br>El día 30 miras tu app… y el saldo es el mismo.<div class='cmp'><div class='bad'><small>DESEO · NO SE PUEDE MEDIR</small>«Quiero ahorrar más»<br>«Quiero gastar menos»</div><div class='good'><small>META · SÍ SE PUEDE MEDIR</small>«Ahorraré $200.000 este mes»<br>«Bajaré los domicilios de 8 a 4 al mes»</div></div>" },
+    { t: "Meta normal vs. meta SMART", h: "Una <b>meta normal</b> dice qué quieres, pero le faltan detalles. Una <b>meta SMART</b> tiene 5 características: <b>S · M · A · R · T</b>.<div class='cmp'><div class='bad'><small>META NORMAL</small>«Quiero ahorrar para una bicicleta.»</div><div class='good'><small>META SMART</small>«Voy a ahorrar $200.000 para una bicicleta, apartando un poco de mi mesada cada semana, para ir al colegio sin depender del bus, antes del 15 de diciembre.»</div></div>" },
+    { t: "¿De dónde salió SMART?", h: "<b>1954 · Peter Drucker</b> propone la «gestión por objetivos».<br><b>1981 · George T. Doran</b> publica SMART en la revista <i>Management Review</i>.<br>Versión original: <i>Specific, Measurable, Assignable, Realistic, Time-related</i>. Hoy las lecturas más usadas son <b>Alcanzable</b> y <b>Relevante</b>.<p class='tip'>Tu misión: reconocer cuándo una meta es normal y cuándo es SMART.</p>" }
+  ],
+  [ // 1 S
+    { t: "S de Específica", h: "Una meta específica <b>cabe en una frase sin ambigüedad</b>. Responde 4 preguntas:<ul><li><b>¿Qué?</b> quiero lograr exactamente</li><li><b>¿Quién?</b> participa o se beneficia</li><li><b>¿Dónde / con qué?</b> herramienta (mi billetera)</li><li><b>¿Para qué?</b> propósito concreto</li></ul>" },
+    { t: "Ejemplo fintech", h: "<div class='cmp'><div class='bad'><small>VAGA</small>«Voy a usar menos la tarjeta»</div><div class='good'><small>ESPECÍFICA</small>«Reduciré mis compras de comida rápida con tarjeta a máximo 2 por semana»</div></div><p class='tip'>Qué: comida rápida · Con qué: tarjeta · Para qué: liberar dinero para ahorrar.</p>" }
+  ],
+  [ // 2 M
+    { t: "M de Medible", h: "Si no tiene número, no se puede gestionar. Una meta medible tiene:<ul><li><b>Indicador:</b> lo que cuento (saldo de la hucha)</li><li><b>Línea base:</b> dónde estoy hoy («gasto $340.000 al mes»)</li><li><b>Valor meta:</b> a dónde quiero llegar («bajar a $200.000»)</li></ul><p class='tip'>Meta medible = indicador + línea base + valor meta</p>" },
+    { t: "Método de 4 pasos", h: "<ol><li><b>Elige el indicador</b></li><li><b>Mide tu línea base</b></li><li><b>Fija el valor meta</b></li><li><b>Programa la medición</b> (cada semana, quincena o mes)</li></ol><p class='tip'>Ejemplo: saldo de la hucha → $50.000 → $150.000 → cada domingo.</p>" },
+    { t: "Tareas vs. resultados", h: "«Hice 10 transferencias» es una <b>tarea</b>. «Ahorré $200.000» es un <b>resultado</b>.<p class='tip'>Las tareas se hacen; los resultados se logran. Mide resultados.</p>" }
+  ],
+  [ // 3 A
+    { t: "A de Alcanzable", h: "Difícil, pero posible con tus recursos. Es la <b>regla del estiramiento justo</b>:<div class='cmp three'><div class='bad'><small>DEMASIADO FÁCIL</small>No cambia nada, aburre</div><div class='good'><small>ZONA ALCANZABLE</small>Exige sin romper el presupuesto</div><div class='bad'><small>IMPOSIBLE</small>Frustra y se abandona</div></div>" },
+    { t: "Ejemplo fintech", h: "Con ingresos de <b>$800.000</b> al mes, «ahorrar $600.000» es imposible; «ahorrar $80.000» (10%) es un reto realista.<p class='tip'>Tu app bancaria muestra tus gastos reales: esa es la evidencia para decidir qué es alcanzable. En la versión original de Doran, la A era <i>Assignable</i> (alguien responsable).</p>" }
+  ],
+  [ // 4 R
+    { t: "R de Relevante", h: "La meta conecta con un propósito mayor. <b>Alcanzable</b> pregunta si puedes; <b>relevante</b> pregunta si vale la pena.<p class='tip'>La prueba: «esta meta me acerca a ___». Si no puedes completarla, la meta sobra.</p>" },
+    { t: "Poco relevante vs. relevante", h: "<div class='cmp'><div class='bad'><small>POCO RELEVANTE</small>«Ahorrar porque todos dicen que hay que ahorrar»</div><div class='good'><small>RELEVANTE</small>«Armar un fondo de $900.000 para no endeudarme si falla mi computador»</div></div>" }
+  ],
+  [ // 5 T
+    { t: "T de Tiempo determinado", h: "«Algún día» significa «nunca». La meta tiene <b>fecha límite</b> y, si es larga, <b>hitos intermedios</b>. La fecha crea urgencia, obliga a priorizar y permite corregir el rumbo.<p class='tip'>Meta de 12 meses: Mes 3 → 25% · Mes 6 → 50% · Mes 9 → 75% · Mes 12 → 100%.</p>" },
+    { t: "La T en las apps", h: "En fintech la T es literal: las apps programan <b>apartados automáticos</b> cada quincena y envían recordatorios cuando te acercas o te alejas de la fecha." }
+  ],
+  [ // 6 Laboratorio
+    { t: "Detective de metas", h: "Revisa cada meta como un detective: <b>¿qué letra falta?</b> Si le falta una, todavía no es SMART.<p class='tip'>Número, fecha y frecuencia de medición: esas son las 3 pistas que más se olvidan.</p>" },
+    { t: "KPI fintech", h: "Un <b>KPI</b> es el número que una empresa vigila para saber si va hacia su objetivo. Es la «M» aplicada a un negocio.<ul><li><b>CAC:</b> costo de conseguir un cliente</li><li><b>Churn:</b> % de usuarios que se van</li><li><b>LTV:</b> valor de un cliente</li><li><b>MAU:</b> usuarios activos al mes</li><li><b>NPS:</b> disposición a recomendar</li></ul>" },
+    { t: "Gamificación y errores", h: "<b>Gamificación:</b> rachas, insignias, barras de progreso y retos hacen visible tu avance.<br><b>Errores frecuentes:</b> medir tareas en vez de resultados, métricas de vanidad y no programar revisiones.<p class='tip'>El juego motiva, pero no reemplaza una meta bien definida.</p>" }
+  ],
+  [ // 7 Castillo
+    { t: "La forja final", h: "Aquí armas metas SMART completas, pieza por pieza: <b>S, M, A, R y T</b>.<p class='tip'>Plantilla: Mi meta es… · Mi indicador es… · Línea base… · Valor meta… · Es alcanzable porque… · Fecha límite… · Revisaré cada…</p>" },
+    { t: "Doble verificación", h: "Antes de terminar, lee la meta en voz alta y pregúntate: ¿qué letra le falta o le sobra?<p class='tip'>Si tu respuesta cumple las 5 letras, es correcta aunque use otros números.</p>" }
+  ],
+  [ // 8 Fortaleza
+    { t: "Defiende la fortaleza", h: "Las <b>metas normales</b> marchan hacia tu base. ¡Conviértelas en SMART antes de que lleguen!<ol><li>Lee la meta que baja.</li><li>Piensa: <b>¿qué letra le falta?</b></li><li>Toca esa letra: tu torre dispara y se la agrega.</li></ol><p class='tip'>Una meta se vuelve SMART cuando ya tiene las 5 letras.</p>" },
+    { t: "No dispares a las SMART", h: "Algunas metas que bajan <b>ya son SMART</b>: tienen S, M, A, R y T. Déjalas pasar: protegen tu base y te dan energía ⚡.<p class='tip'>Si le disparas a una meta SMART, ¡pierdes un corazón! Si disparas la letra equivocada, pierdes energía.</p>" }
+  ],
+  [ // 9 Muralla
+    { t: "Dinero bajo ataque", h: "En la Muralla del Dinero las metas son de <b>ahorro, tarjetas y apps</b>. Ahora algunas pueden tener <b>dos letras faltantes</b>.<p class='tip'>Si una meta recibe una letra y sigue sin ser SMART, ¡todavía le falta otra!</p>" },
+    { t: "Usa la lupa 🔍", h: "La lupa te muestra qué piezas tiene y qué le falta a una meta. Tienes pocas por nivel: úsalas cuando dudes." }
+  ],
+  [ // 10 Bahía
+    { t: "Impostores", h: "Hay metas que <b>parecen SMART</b> pero tienen un número imposible o les falta una pieza escondida. Y hay metas que sí son SMART.<p class='tip'>Antes de disparar, repasa: ¿qué? ¿cuánto? ¿cómo? ¿para qué? ¿para cuándo?</p>" },
+    { t: "A de Alcanzable", h: "«Ahorrar $20.000.000 en dos días» tiene número y fecha, pero es <b>imposible</b>. Le falta la <b>A</b>: ¡dispárale la A!" }
+  ],
+  [ // 11 Torre
+    { t: "La defensa final", h: "Las metas llegan más rápido y con <b>hasta tres letras faltantes</b>. El Rey Vago es un deseo gigante: necesita <b>las cinco letras</b> para volverse SMART.<p class='tip'>Respira, lee con calma y dispara la letra correcta. ¡Tú puedes!</p>" }
+  ]
+];
+
+/* Tabla resumen (Cuaderno) */
+const TABLE = [
+  ["S", "Específica", "¿Qué, quién, con qué, para qué?", "«Reducir compras de comida rápida con tarjeta»"],
+  ["M", "Medible", "¿Cuál es el indicador y el número?", "«De 8 domicilios al mes a 4»"],
+  ["A", "Alcanzable", "¿Es posible con mis recursos reales?", "«Ahorrar 10% de mis ingresos, no 60%»"],
+  ["R", "Relevante", "¿A qué propósito mayor me acerca?", "«Fondo de emergencia para no endeudarme»"],
+  ["T", "Tiempo determinado", "¿Para cuándo, con qué hitos?", "«En 6 meses, revisión cada viernes»"]
+];
+
+/* Frases de ánimo y datos curiosos para la pantalla de resultados */
+const FACTS = [
+  "Dato: SMART lo publicó George T. Doran en 1981 en la revista Management Review.",
+  "Dato: antes de SMART, Peter Drucker propuso en 1954 la gestión por objetivos.",
+  "Recuerda: un deseo dice qué quieres; una meta SMART dice cuánto, para cuándo y cómo se medirá.",
+  "Recuerda: «algún día» significa «nunca». ¡Pon una fecha!",
+  "Recuerda: lo que no se mide, no se puede mejorar.",
+  "Recuerda: alcanzable pregunta si puedes; relevante pregunta si vale la pena.",
+  "Dato: en fintech cada toque deja un dato, y donde hay datos hay medición.",
+  "Recuerda: mide resultados, no solo tareas.",
+  "Recuerda: medir una sola vez, al final, solo sirve para lamentarse. Programa revisiones.",
+  "Dato: un sudoku también es una meta SMART: específica, medible, alcanzable, relevante y con tiempo límite."
+];
+
+"use strict";
+/* ============================================================
+   Generadores de retos y configuración de los 200 niveles
+   Todo es determinista por nivel (semilla) y no toca el DOM.
+   ============================================================ */
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function RNG(seed) {
+  const f = mulberry32((Math.imul(seed | 0, 2654435761) ^ 0x9e3779b9) | 0);
+  const o = {
+    f,
+    i: n => Math.floor(f() * n),
+    pick: a => a[Math.floor(f() * a.length)],
+    shuffle: a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(f() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; },
+    sample: (a, n) => o.shuffle(a).slice(0, n)
+  };
+  return o;
+}
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/* ---------- Niveles ---------- */
+function lvInfo(n) {
+  const w = Math.floor((n - 1) / 25);
+  const idx = ((n - 1) % 25) + 1;
+  return { n, w, idx, phase: idx <= 8 ? 0 : idx <= 16 ? 1 : idx <= 24 ? 2 : 3, boss: idx === 25, mini: idx % 5 === 0 && idx < 25 };
+}
+
+/* ---------- Variantes de una meta ---------- */
+function mkVariant(sc, kind) {
+  const S = { k: "S", t: sc.S }, M = { k: "M", t: sc.M }, A = { k: "A", t: sc.A }, R = { k: "R", t: sc.R }, T = { k: "T", t: sc.T };
+  let segs, missing = [], flaw = null;
+  switch (kind) {
+    case "smart": segs = [S, M, A, R, T]; break;
+    case "vague": segs = [{ k: null, t: sc.vague.replace(/\.$/, "") }]; missing = ["S", "M", "A", "R", "T"]; flaw = "S"; break;
+    case "noM": segs = [S, A, R, T]; missing = ["M"]; flaw = "M"; break;
+    case "noR": segs = [S, M, A, T]; missing = ["R"]; flaw = "R"; break;
+    case "noT": segs = [S, M, A, R]; missing = ["T"]; flaw = "T"; break;
+    case "unreal": segs = [S, { k: "M", t: sc.xM, bad: 1 }, A, R, { k: "T", t: sc.xT, bad: 1 }]; flaw = "A"; break;
+    default: throw new Error("variante desconocida " + kind);
+  }
+  return { kind, sc, segs, missing, flaw, smart: kind === "smart", text: segs.map(s => s.t).join(", ") + "." };
+}
+const FLAW_KIND = { S: "vague", M: "noM", A: "unreal", R: "noR", T: "noT" };
+
+function whyVariant(v) {
+  if (v.smart) return "¡Tiene las 5 letras! S: qué hago · M: cuánto · A: cómo · R: para qué · T: para cuándo.";
+  if (v.kind === "vague") return "Es una meta normal (un deseo): no dice cuánto, cómo, para qué ni para cuándo.";
+  if (v.kind === "unreal") return "Tiene número y fecha, pero es imposible de lograr. Le falta la A de Alcanzable.";
+  const L = LET[v.flaw];
+  return "Casi lo logra, pero le falta la " + v.flaw + " de " + L.name + ": no responde «" + L.key + "».";
+}
+
+function breakdownHTML(v) {
+  if (v.kind === "vague") return '<div class="bk"><div class="chip miss"><b>—</b><span>Solo es un deseo: faltan S, M, A, R y T</span></div></div>';
+  let out = '<div class="bk">';
+  LK.forEach(k => {
+    const L = LET[k];
+    const seg = v.segs.find(s => s.k === k);
+    if (v.kind === "unreal" && k === "A") {
+      out += '<div class="chip bad" style="--c:' + L.color + '"><b>A</b><span>No es alcanzable: el número y el plazo son demasiado grandes</span></div>';
+    } else if (seg) {
+      out += '<div class="chip ' + (seg.bad ? "warn" : "ok") + '" style="--c:' + L.color + '"><b>' + k + "</b><span>" + esc(seg.t) + "</span></div>";
+    } else {
+      out += '<div class="chip miss" style="--c:' + L.color + '"><b>' + k + "</b><span>Falta: " + esc(L.key) + "</span></div>";
+    }
+  });
+  return out + "</div>";
+}
+
+/* ---------- Utilidades de generación ---------- */
+function pickSC(rng, ctx, notId) {
+  ctx.used = ctx.used || new Set();
+  let pool = SC.filter(s => !ctx.used.has(s.id) && s.id !== notId);
+  if (ctx.w === 6 && rng.f() < 0.7) { const p2 = pool.filter(s => s.fin); if (p2.length) pool = p2; }
+  if (!pool.length) pool = SC;
+  const sc = rng.pick(pool);
+  ctx.used.add(sc.id);
+  return sc;
+}
+const stmt = t => '<div class="stmt">' + esc(t) + "</div>";
+const SMARTLET = "SMART";
+
+/* ---------- Generadores por tipo ---------- */
+const GEN = {};
+
+GEN.tf = (rng, ctx) => {
+  const tag = ctx.arg === "L" ? (ctx.L || "G") : (ctx.arg || "G");
+  ctx.usedTF = ctx.usedTF || new Set();
+  let pool = TF.filter(t => t.g === tag && !ctx.usedTF.has(t.s));
+  if (!pool.length) pool = TF.filter(t => t.g === tag);
+  const t = rng.pick(pool); ctx.usedTF.add(t.s);
+  return {
+    type: "tf", kind: "choice", prompt: "¿Verdadero o falso?", stem: stmt(t.s),
+    opts: [{ id: "v", label: "✔ Verdadero" }, { id: "f", label: "✘ Falso" }],
+    correct: t.a ? "v" : "f", why: { v: t.a ? "" : t.e, f: t.a ? t.e : "" }, explain: t.e, row: 1
+  };
+};
+
+GEN.classify = (rng, ctx) => {
+  const diff = ctx.arg || "mid";
+  const sc = pickSC(rng, ctx);
+  let kinds;
+  if (ctx.L) kinds = [FLAW_KIND[ctx.L]];
+  else if (diff === "easy") kinds = ["vague"];
+  else if (diff === "mid") kinds = ["vague", "noM", "noR", "noT"];
+  else kinds = ["noM", "noR", "noT", "unreal", "vague"];
+  const kind = rng.f() < 0.5 ? "smart" : rng.pick(kinds);
+  const v = mkVariant(sc, kind);
+  return {
+    type: "classify", kind: "choice", prompt: "¿Qué tipo de meta es esta?", stem: stmt(v.text),
+    opts: [{ id: "n", label: "📝 Meta normal" }, { id: "s", label: "💎 Meta SMART" }],
+    correct: v.smart ? "s" : "n",
+    why: { n: v.smart ? "Esta sí cumple las 5 letras. Busca la S, la M, la A, la R y la T." : "", s: v.smart ? "" : whyVariant(v) },
+    explain: whyVariant(v), explainHTML: breakdownHTML(v), row: 1
+  };
+};
+
+GEN.findSmart = (rng, ctx) => {
+  const n = parseInt(ctx.arg, 10) || 3;
+  const sc = pickSC(rng, ctx);
+  const good = mkVariant(sc, "smart");
+  let kinds;
+  if (ctx.L) kinds = [FLAW_KIND[ctx.L]];
+  else if (n === 2) kinds = ["vague"];
+  else kinds = ["vague", "noM", "noR", "noT", "unreal"];
+  const opts = [{ id: "good", label: good.text, v: good }];
+  const usedKinds = [];
+  for (let i = 0; i < n - 1; i++) {
+    const sc2 = pickSC(rng, ctx);
+    let k = rng.pick(kinds);
+    if (kinds.length > 1 && usedKinds.length < kinds.length) { let tries = 0; while (usedKinds.includes(k) && tries++ < 8) k = rng.pick(kinds); }
+    usedKinds.push(k);
+    const v = mkVariant(sc2, k);
+    opts.push({ id: "d" + i, label: v.text, v });
+  }
+  const shuffled = rng.shuffle(opts);
+  const why = {};
+  shuffled.forEach(o => { if (o.id !== "good") why[o.id] = whyVariant(o.v); });
+  return {
+    type: "findSmart", kind: "choice", prompt: "¿Cuál de estas metas es SMART?", stem: "",
+    opts: shuffled.map(o => ({ id: o.id, label: o.label })), correct: "good", why,
+    explain: whyVariant(good), explainHTML: breakdownHTML(good), row: 0
+  };
+};
+
+GEN.missing = (rng, ctx) => {
+  const letters = ["M", "A", "R", "T"];
+  const L = ctx.L && ctx.L !== "S" ? ctx.L : rng.pick(letters);
+  const sc = pickSC(rng, ctx);
+  const v = mkVariant(sc, FLAW_KIND[L]);
+  const why = {};
+  letters.forEach(k => {
+    if (k === L) return;
+    const seg = v.segs.find(s => s.k === k);
+    if (v.kind === "unreal") why[k] = k === "A" ? "" : "Sí tiene " + (k === "M" ? "número" : "plazo") + " («" + seg.t + "»), pero es demasiado exagerado para lograrlo.";
+    else why[k] = seg ? "Esa letra sí está: «" + seg.t + "»." : "";
+  });
+  return {
+    type: "missing", kind: "choice", prompt: "Esta meta ya dice QUÉ quiere lograr (S), pero le falta otra letra. ¿Cuál?",
+    stem: stmt(v.text),
+    opts: letters.map(k => ({ id: k, label: k + " · " + LET[k].name, color: LET[k].color })),
+    correct: L, why, explain: whyVariant(v), explainHTML: breakdownHTML(v), row: 0, grid: 2
+  };
+};
+
+GEN.whichLetter = (rng, ctx) => {
+  const sc = pickSC(rng, ctx);
+  const v = mkVariant(sc, "smart");
+  const kSeg = ctx.L && ctx.arg === "L" ? ctx.L : (ctx.L || rng.pick(LK));
+  const seg = v.segs.find(s => s.k === kSeg);
+  const html = '<div class="stmt">' + v.segs.map(s => s.k === kSeg ? "<mark>" + esc(s.t) + "</mark>" : esc(s.t)).join(", ") + ".</div>";
+  const why = {};
+  LK.forEach(k => { if (k !== kSeg) why[k] = "Esa letra responde «" + LET[k].key + "». La parte resaltada responde otra pregunta."; });
+  return {
+    type: "whichLetter", kind: "choice", prompt: "¿Qué letra de SMART representa la parte resaltada?", stem: html,
+    opts: LK.map(k => ({ id: k, label: k + " · " + LET[k].name, color: LET[k].color })), correct: kSeg, why,
+    explain: "«" + seg.t + "» responde «" + LET[kSeg].key + "»: es la " + kSeg + " de " + LET[kSeg].name + ".", row: 0, grid: 2
+  };
+};
+
+GEN.tap = (rng, ctx) => {
+  const sc = pickSC(rng, ctx);
+  const v = mkVariant(sc, "smart");
+  const k = ctx.L || rng.pick(LK);
+  return {
+    type: "tap", kind: "tap", prompt: "Toca la parte que responde: " + LET[k].tapQ, segs: v.segs, target: k,
+    explain: "Correcto: «" + v.segs.find(s => s.k === k).t + "» es la " + k + " de " + LET[k].name + "."
+  };
+};
+
+function cmpVariants(sc, k, rng) {
+  switch (k) {
+    case "S": return { good: sc.S + ".", weak: sc.vague, why: "La primera dice exactamente QUÉ se va a hacer. La otra es un deseo general." };
+    case "M": return { good: sc.S + ", " + sc.M + ".", weak: sc.S + ", " + rng.pick(WEAK.M) + ".", why: "Tiene un número que se puede contar. «Muchas veces» o «bastante» no se pueden comprobar." };
+    case "A": return { good: sc.S + ", " + sc.M + ", " + sc.A + ".", weak: sc.S + ", " + sc.xM + ", " + rng.pick(WEAK.A) + ".", why: "Es un reto posible con un plan real. La otra es exagerada y sin recursos." };
+    case "R": return { good: sc.S + ", " + sc.R + ".", weak: sc.S + ", " + rng.pick(WEAK.R) + ".", why: "Tiene un propósito que le importa a quien la pone. «Porque sí» no motiva." };
+    default: return { good: sc.S + ", " + sc.T + ".", weak: sc.S + ", " + rng.pick(WEAK.T) + ".", why: "Tiene fecha o plazo. «Algún día» significa «nunca»." };
+  }
+}
+GEN.compare = (rng, ctx) => {
+  const k = ctx.L || rng.pick(LK);
+  const sc = pickSC(rng, ctx);
+  const c = cmpVariants(sc, k, rng);
+  const goodFirst = rng.f() < 0.5;
+  return {
+    type: "compare", kind: "choice", prompt: "¿Cuál de estas metas es más " + LET[k].adj.replace("con tiempo determinado", "temporal (tiene tiempo determinado)") + "?", stem: "",
+    opts: goodFirst ? [{ id: "good", label: c.good }, { id: "weak", label: c.weak }] : [{ id: "weak", label: c.weak }, { id: "good", label: c.good }],
+    correct: "good", why: { weak: c.why }, explain: c.why, row: 0
+  };
+};
+GEN.yesno = (rng, ctx) => {
+  const k = ctx.L || rng.pick(LK);
+  const sc = pickSC(rng, ctx);
+  const c = cmpVariants(sc, k, rng);
+  const isGood = rng.f() < 0.5;
+  return {
+    type: "yesno", kind: "choice", prompt: LET[k].yn, stem: stmt(isGood ? c.good : c.weak),
+    opts: [{ id: "y", label: "✔ Sí" }, { id: "n", label: "✘ No" }], correct: isGood ? "y" : "n",
+    why: { y: isGood ? "" : c.why, n: isGood ? c.why : "" }, explain: c.why, row: 1
+  };
+};
+
+GEN.taskres = (rng, ctx) => {
+  ctx.usedTR = ctx.usedTR || new Set();
+  let pool = TASKRES.filter(t => !ctx.usedTR.has(t.s)); if (!pool.length) pool = TASKRES;
+  const t = rng.pick(pool); ctx.usedTR.add(t.s);
+  return {
+    type: "taskres", kind: "choice", prompt: "¿Es una tarea o un resultado?", stem: stmt(t.s),
+    opts: [{ id: "tarea", label: "🛠️ Tarea" }, { id: "resultado", label: "🏆 Resultado" }], correct: t.a,
+    why: { tarea: t.a === "tarea" ? "" : "Es un resultado: un número que muestra lo que lograste.", resultado: t.a === "resultado" ? "" : "Es una tarea: algo que haces, no lo que logras." },
+    explain: "Las tareas se hacen; los resultados se logran. Mide resultados.", row: 1
+  };
+};
+
+GEN.build = (rng, ctx) => {
+  const n = Math.max(1, Math.min(5, parseInt(ctx.arg, 10) || 5));
+  const sc = pickSC(rng, ctx);
+  let chosen;
+  if (ctx.L) { const others = rng.sample(LK.filter(k => k !== ctx.L), n - 1); chosen = LK.filter(k => k === ctx.L || others.includes(k)); }
+  else chosen = LK.filter(k => rng.sample(LK, n).includes(k));
+  const weakOf = {
+    S: () => [sc.vague.replace(/\.$/, ""), rng.pick(WEAK.S)],
+    M: () => rng.sample(WEAK.M, 2), A: () => rng.sample(WEAK.A, 2), R: () => rng.sample(WEAK.R, 2), T: () => rng.sample(WEAK.T, 2)
+  };
+  const slots = LK.map(k => {
+    if (!chosen.includes(k)) return { k, fixed: true, t: sc[k] };
+    const opts = [{ t: sc[k], ok: 1 }].concat(weakOf[k]().map(t => ({ t, ok: 0 })));
+    return { k, opts: rng.shuffle(opts) };
+  });
+  return {
+    type: "build", kind: "build", prompt: "¡Forja la meta SMART! Elige la mejor pieza para cada letra.", vague: sc.vague, slots,
+    explain: "Meta forjada: tiene S, M, A, R y T."
+  };
+};
+
+GEN.match = (rng, ctx) => {
+  const name = ctx.arg || "letters";
+  if (name === "ex") {
+    const sc = pickSC(rng, ctx);
+    const pairs = LK.map(k => [sc[k], LET[k].name]);
+    return { type: "match", kind: "match", prompt: "Une cada parte de la meta con su letra SMART", pairs, explain: "Cada parte de la meta responde una pregunta distinta." };
+  }
+  const m = MATCH[name];
+  return { type: "match", kind: "match", prompt: m.title, pairs: m.pairs.slice(), explain: "¡Parejas completas!" };
+};
+
+GEN.order = (rng, ctx) => {
+  const i = ctx.arg !== undefined && ctx.arg !== "" ? parseInt(ctx.arg, 10) : rng.i(ORDERS.length);
+  const o = ORDERS[i % ORDERS.length];
+  return { type: "order", kind: "order", prompt: o.t, items: o.items.slice(), explain: o.e };
+};
+
+GEN.hangman = (rng, ctx) => {
+  ctx.usedH = ctx.usedH || new Set();
+  let pool = HANG.filter(h => !ctx.usedH.has(h.w)); if (!pool.length) pool = HANG;
+  const h = rng.pick(pool); ctx.usedH.add(h.w);
+  return { type: "hangman", kind: "hangman", prompt: "Ahorcado SMART: adivina la palabra", word: h.w, clue: h.c, explain: "La palabra era " + h.w + "." };
+};
+
+/* ---------- Plan de retos por mundo ---------- */
+function planFor(w) {
+  const f = WORLDS[w].focus;
+  if (w === 0) return {
+    p0: ["tf:G", "classify:easy", "tf:G", "classify:easy", "match:letters"],
+    p1: ["classify:easy", "findSmart:2", "match:questions", "tf:G", "classify:mid", "hangman"],
+    p2: ["classify:mid", "findSmart:3", "match:english", "whichLetter", "missing", "order:2"],
+    boss: ["classify:mid", "findSmart:3", "tf:G", "match:history", "missing"]
+  };
+  if (f) {
+    const extra = {
+      M: ["taskres", "order:0", "match:method"], A: ["tf:L"], R: ["tf:L"], T: ["order:1"], S: ["tf:L"]
+    }[f];
+    const p2 = ["findSmart:3", f === "S" ? "tap:L" : "missing:L", "tap:L", "classify:L", "build:2", "order:3"];
+    if (f === "M") { p2[5] = "order:0"; p2.push("taskres"); }
+    if (f === "T") { p2[5] = "order:1"; }
+    return {
+      p0: ["tf:L", "yesno:L", "compare:L", "yesno:L", "whichLetter:L"].concat(f === "M" ? ["taskres"] : []),
+      p1: ["compare:L", "tap:L", "whichLetter:L", "tf:L", "classify:L", "hangman"].concat(extra.slice(0, 1)),
+      p2,
+      boss: ["compare:L", "tap:L", f === "S" ? "whichLetter:L" : "missing:L", "findSmart:4", "build:3", "tf:L"]
+    };
+  }
+  if (w === 6) return {
+    p0: ["whichLetter", "tap", "classify:mid", "missing", "findSmart:3", "tf:F"],
+    p1: ["missing", "findSmart:4", "match:kpi", "match:fintech", "tf:F", "taskres", "build:3"],
+    p2: ["missing", "classify:hard", "build:4", "findSmart:4", "whichLetter", "tf:F", "match:ex"],
+    boss: ["missing", "findSmart:4", "build:5", "match:kpi", "tap", "taskres"]
+  };
+  return {
+    p0: ["classify:hard", "missing", "build:4", "findSmart:4", "tap", "match:ex"],
+    p1: ["build:5", "missing", "match:ex", "findSmart:4", "whichLetter", "order:3", "hangman"],
+    p2: ["build:5", "missing", "classify:hard", "tap", "tf:G", "order:0", "match:ex"],
+    boss: ["build:5", "missing", "findSmart:4", "classify:hard", "match:ex", "tap"]
+  };
+}
+const PLAN_CACHE = {};
+
+function numQuestions(info) {
+  if (info.boss) return planFor(info.w).boss.length;
+  return info.mini ? 3 : 2;
+}
+
+function makeChallenge(n) {
+  const info = lvInfo(n);
+  const plan = PLAN_CACHE[info.w] || (PLAN_CACHE[info.w] = planFor(info.w));
+  const list = info.boss ? plan.boss : plan["p" + info.phase];
+  const nq = numQuestions(info);
+  const rng = RNG(n * 131 + 7);
+  const start = info.boss ? 0 : (info.idx * 2 + info.w) % list.length;
+  const ctx = { w: info.w, L: WORLDS[info.w].focus, used: new Set() };
+  const qs = [];
+  for (let j = 0; j < nq; j++) {
+    const spec = list[(start + j) % list.length];
+    const parts = spec.split(":");
+    const type = parts[0];
+    let arg = parts[1];
+    const c = Object.assign({}, ctx, { arg });
+    if (arg === "L" || !ctx.L) { if (arg === "L") c.arg = "L"; }
+    // en mundos de letra, los tipos sin ":L" también se centran en la letra
+    const q = GEN[type](rng, c);
+    ctx.used = c.used; ctx.usedTF = c.usedTF; ctx.usedTR = c.usedTR; ctx.usedH = c.usedH;
+    q.spec = spec;
+    qs.push(q);
+  }
+  return qs;
+}
+
+/* ---------- Configuración del tablero de cada nivel ---------- */
+const TUNE = {
+  per0: 8, per1: 25, rate: [1.6, 2.1, 3.5], mult: [1, 0.78, 0.62],
+  dBase: 1.06, dSpan: 1.14, dExp: 3.5,
+  iceFrac0: 0.12, iceFrac1: 0.30, iceA: 4, iceB: 0.9,
+  scoreMove0: 140, scoreMove1: 185
+};
+function dFactor(p) { return TUNE.dBase + TUNE.dSpan * Math.pow(1 - p, TUNE.dExp); }
+
+function levelConfig(n) {
+  const info = lvInfo(n);
+  const { w, idx, boss, mini } = info;
+  const r = RNG(n * 977 + 31);
+  const p = (n - 1) / 199;
+  const size = w < 2 ? 6 : 7;
+  const wf = WORLDS[w].focus;
+  const fi = wf ? LK.indexOf(wf) : -1;
+  let kind = "collect";
+  if (boss) kind = "ice";
+  else if (mini && w >= 1) kind = "ice";
+  else if (w >= 1 && idx % 4 === 2) kind = "score";
+  if (n <= 5) kind = "collect";
+  if (w === 0 && idx === 10) kind = "ice";
+  const cfg = { n, w, idx, size, kind, boss, goals: [], ice: [], score: 0, moves: 20, hammers: boss ? 2 : 1, types: 5 };
+  const d = dFactor(p);
+
+  const nLet = n < 15 ? 1 : n < 80 ? 2 : 3;
+  const pickLetters = k => {
+    const set = [];
+    if (fi >= 0) set.push(fi);
+    const pool = r.shuffle([0, 1, 2, 3, 4].filter(x => x !== fi));
+    while (set.length < k) set.push(pool.shift());
+    return set.slice(0, k);
+  };
+
+  let needCollect = 0, needIce = 0;
+  if (kind === "collect" || kind === "ice") {
+    if (kind === "collect" || boss) {
+      const k = kind === "ice" ? Math.min(2, nLet) : nLet;
+      const per = Math.round((TUNE.per0 + (TUNE.per1 - TUNE.per0) * p) * TUNE.mult[k - 1] * (kind === "ice" ? 0.75 : 1));
+      pickLetters(k).forEach(t => cfg.goals.push({ t, n: per }));
+      needCollect = (per * k) / TUNE.rate[k - 1];
+    }
+  }
+  if (kind === "ice") {
+    const cells = size * size;
+    const cnt = Math.round(cells * (TUNE.iceFrac0 + (TUNE.iceFrac1 - TUNE.iceFrac0) * p) * (boss ? 1.1 : 1));
+    const all = r.shuffle(Array.from({ length: cells }, (_, i) => i)).slice(0, cnt);
+    const two = p > 0.45;
+    all.forEach(i => cfg.ice.push({ r: Math.floor(i / size), c: i % size, h: two && r.f() < 0.35 ? 2 : 1 }));
+    const hits = cfg.ice.reduce((a, b) => a + b.h, 0);
+    needIce = TUNE.iceA + TUNE.iceB * hits;
+  }
+  if (kind === "score") {
+    const need = 17 + 8 * p;
+    cfg.moves = Math.ceil(need * d) + 2;
+    cfg.score = Math.round((TUNE.scoreMove0 + (TUNE.scoreMove1 - TUNE.scoreMove0) * p) * need / 10) * 10;
+  } else {
+    cfg.moves = Math.ceil(Math.max(needCollect, needIce) * d * (boss ? 1.05 : 1)) + 2;
+  }
+  cfg.moves = Math.max(10, Math.min(cfg.moves, 45));
+  return cfg;
+}
+
+function levelTitle(n) {
+  const i = lvInfo(n);
+  return "Nivel " + n + " · " + WORLDS[i.w].name;
+}
+
+"use strict";
+/* ============================================================
+   Defensa SMART (niveles 201-300): motor sin DOM + configuración
+   Las metas normales bajan hacia la base. Cada torre-letra les
+   agrega la letra que les falta. Las metas SMART no se tocan.
+   ============================================================ */
+
+const TD_FIRST = 8;           // primer mundo de defensa
+const TD_HEARTS = 5;
+const TD_CARD_GAP = 0.32;     // separación mínima entre tarjetas (fracción del recorrido)
+
+const TD_HMAX = 118;
+const tdH = (text, boss) => Math.min(TD_HMAX, Math.max(64, 22 + Math.ceil(text.length / 38) * 15.8 + (boss ? 16 : 0)));
+const cap1 = t => t.charAt(0).toUpperCase() + t.slice(1);
+
+/* Meta con letras quitadas (drop) */
+function tdDrop(sc, drop) {
+  const all = { S: sc.S, M: sc.M, A: sc.A, R: sc.R, T: sc.T };
+  const segs = LK.filter(k => drop.indexOf(k) < 0).map(k => ({ k, t: all[k] }));
+  return { vk: "drop", segs, need: drop.slice(), text: cap1(segs.map(s => s.t).join(", ")) + "." };
+}
+function tdUnreal(sc) {
+  const v = mkVariant(sc, "unreal");
+  return { vk: "unreal", segs: v.segs, need: ["A"], text: v.text };
+}
+function tdSmart(sc) {
+  const v = mkVariant(sc, "smart");
+  return { vk: "smart", segs: v.segs, need: [], text: v.text };
+}
+function tdVague(sc) {
+  return { vk: "vague", segs: [], need: LK.slice(), text: sc.vague };
+}
+
+/* ---------- Configuración de un nivel ---------- */
+const TD_P = [
+  { n: [7, 12], cross: [34, 27], ally: [0, .2], f2: [0, .2], f3: [0, 0], real: 0, fin: 0, regen: .55 },
+  { n: [9, 14], cross: [31, 25], ally: [.15, .25], f2: [.25, .55], f3: [0, 0], real: .1, fin: .9, regen: .6 },
+  { n: [10, 16], cross: [28, 22], ally: [.3, .4], f2: [.2, .5], f3: [0, .12], real: .25, fin: .5, regen: .65 },
+  { n: [12, 18], cross: [26, 19], ally: [.2, .3], f2: [.3, .5], f3: [.1, .3], real: .2, fin: .5, regen: .7 }
+];
+const lerp = (a, b, t) => a + (b - a) * t;
+
+function tdConfig(n) {
+  const info = lvInfo(n), k = info.w - TD_FIRST, idx = info.idx, p = (idx - 1) / 24, P = TD_P[k];
+  const rng = RNG(n * 977 + 31);
+  const W = WORLDS[info.w];
+  let count = Math.round(lerp(P.n[0], P.n[1], p)) + (info.mini ? 3 : 0) + (info.boss ? 4 : 0);
+  const cross = lerp(P.cross[0], P.cross[1], p);
+  const allyP = k === 0 && idx <= 3 ? 0 : lerp(P.ally[0], P.ally[1], p);
+  const f2 = lerp(P.f2[0], P.f2[1], p), f3 = lerp(P.f3[0], P.f3[1], p);
+  let letters = LK.slice();
+  if (k === 0) letters = idx <= 8 ? ["M", "R", "T"] : idx <= 16 ? ["S", "M", "R", "T"] : LK.slice();
+  const used = new Set();
+  const pickScn = () => {
+    let pool = SC.filter(s => !used.has(s.id));
+    if (rng.f() < P.fin) { const q = pool.filter(s => s.fin); if (q.length) pool = q; }
+    if (!pool.length) pool = SC;
+    const sc = rng.pick(pool); used.add(sc.id); return sc;
+  };
+  const seq = [];
+  const bossPos = info.boss ? count - 4 : -1, elitePos = info.mini ? Math.floor(count / 2) : -1;
+  for (let i = 0; i < count; i++) {
+    const sc = pickScn();
+    let e;
+    if (i === bossPos) { e = tdVague(sc); e.kind = "boss"; e.speed = 0.7; }
+    else if (i === elitePos) {
+      const ls = rng.sample(letters.length >= 3 ? letters : LK, 3); e = tdDrop(sc, LK.filter(x => ls.indexOf(x) >= 0)); e.kind = "foe"; e.elite = 1; e.speed = 0.9;
+    } else if (i >= 2 && rng.f() < allyP) { e = tdSmart(sc); e.kind = "ally"; e.speed = 1; }
+    else {
+      const r = rng.f();
+      if (i >= 2 && letters.indexOf("A") >= 0 && rng.f() < P.real && idx > 8 || (k === 0 && idx > 16 && i === 3)) { e = tdUnreal(sc); }
+      else {
+        const nf = i < 2 ? 1 : r < f3 ? 3 : r < f3 + f2 ? 2 : 1;
+        const ls = rng.sample(letters, Math.min(nf, letters.length));
+        e = tdDrop(sc, LK.filter(x => ls.indexOf(x) >= 0));
+      }
+      e.kind = "foe"; e.speed = 1;
+    }
+    e.id = i + 1; e.sc = sc.id; e.h = Math.round(tdH(e.text, e.kind === "boss"));
+    seq.push(e);
+  }
+  return {
+    n, w: info.w, idx, info, seq, cross,
+    interval: cross * (0.30 - 0.05 * p - 0.01 * k), travel: 280,
+    regen: P.regen, emax: 6, e0: 5, hearts: TD_HEARTS, lupas: info.boss ? 4 : 3, 
+    needed: seq.filter(e => e.kind !== "ally").length, allies: seq.filter(e => e.kind === "ally").length
+  };
+}
+
+/* ---------- Motor ---------- */
+class TD {
+  constructor(cfg) {
+    this.cfg = cfg; this.t = 0; this.e = cfg.e0; this.hearts = cfg.hearts; this.lupas = cfg.lupas;
+    this.en = []; this.next = 0; this.nextAt = 0.6; this.ev = []; this.over = null; this.score = 0;
+    this.st = { shots: 0, wrong: 0, leaks: 0, allyHits: 0, conv: 0, saved: 0 };
+    this.travel = cfg.travel || 280;
+  }
+  get lost() { return this.cfg.hearts - this.hearts; }
+  total() { return this.cfg.seq.length; }
+  remaining() { return this.total() - this.next + this.en.length; }
+  emit(o) { this.ev.push(o); }
+  drain() { const e = this.ev; this.ev = []; return e; }
+  find(id) { return this.en.find(x => x.id === id) || null; }
+  closest() {
+    let b = null;
+    this.en.forEach(x => { if (!b || x.y > b.y) b = x; });
+    return b;
+  }
+  step(dt) {
+    if (this.over) return;
+    this.t += dt;
+    this.e = Math.min(this.cfg.emax, this.e + this.cfg.regen * dt);
+    // spawn
+    if (this.next < this.cfg.seq.length && this.t >= this.nextAt) {
+      const tail = this.en.reduce((m, x) => Math.min(m, x.y), 9);
+      const spn = this.cfg.seq[this.next];
+      if (this.en.length === 0 || tail >= (spn.h + 8) / this.travel) {
+        const sp = this.cfg.seq[this.next++];
+        const en = { id: sp.id, spec: sp, y: 0, need: sp.need.slice(), hit: [], speed: sp.speed || 1 };
+        this.en.push(en); this.emit({ t: "spawn", id: en.id });
+        this.nextAt = this.t + this.cfg.interval;
+      }
+    }
+    // avance
+    for (let i = this.en.length - 1; i >= 0; i--) {
+      const x = this.en[i];
+      x.y += dt / this.cfg.cross * x.speed;
+      if (x.y >= 1) {
+        this.en.splice(i, 1);
+        if (x.spec.kind === "ally") { this.st.saved++; this.e = Math.min(this.cfg.emax, this.e + 2); this.score += 60; this.emit({ t: "saved", id: x.id }); }
+        else {
+          const dmg = x.spec.kind === "boss" ? 3 : 1;
+          this.hearts = Math.max(0, this.hearts - dmg); this.st.leaks++; this.emit({ t: "leak", id: x.id, dmg });
+        }
+      }
+    }
+    if (this.hearts <= 0) { this.over = "lose"; this.emit({ t: "over", r: "lose" }); return; }
+    if (this.next >= this.cfg.seq.length && this.en.length === 0) { this.over = "win"; this.emit({ t: "over", r: "win" }); }
+  }
+  /* dispara la letra L (a la meta id, o a la más cercana) */
+  fire(L, id) {
+    if (this.over) return false;
+    const x = id ? this.find(id) : this.closest();
+    if (!x) return false;
+    if (this.e < 1) { this.emit({ t: "noenergy" }); return false; }
+    this.e -= 1; this.st.shots++;
+    const sp = x.spec;
+    if (sp.kind === "ally") {
+      this.hearts = Math.max(0, this.hearts - 1); this.st.allyHits++;
+      this.en.splice(this.en.indexOf(x), 1);
+      this.emit({ t: "allyhit", id: x.id, L });
+      if (this.hearts <= 0) { this.over = "lose"; this.emit({ t: "over", r: "lose" }); }
+      return true;
+    }
+    if (x.need.indexOf(L) >= 0 && x.hit.indexOf(L) < 0) {
+      x.hit.push(L);
+      this.score += 20;
+      this.emit({ t: "hit", id: x.id, L });
+      if (x.hit.length >= x.need.length) {
+        this.en.splice(this.en.indexOf(x), 1);
+        this.st.conv++; this.score += 40 * x.need.length + (sp.kind === "boss" ? 300 : 0);
+        this.emit({ t: "conv", id: x.id, boss: sp.kind === "boss" });
+        if (this.next >= this.cfg.seq.length && this.en.length === 0) { this.over = "win"; this.emit({ t: "over", r: "win" }); }
+      }
+      return true;
+    }
+    this.st.wrong++;
+    x.y = Math.min(0.98, x.y + 0.04);
+    this.emit({ t: "wrong", id: x.id, L, why: tdExplainWrong(x, L) });
+    return true;
+  }
+  stars() {
+    if (this.over !== "win") return 0;
+    const l = this.lost, w = this.st.wrong;
+    return l <= 1 && w <= 2 ? 3 : l <= 3 ? 2 : 1;
+  }
+}
+
+function tdExplainWrong(x, L) {
+  if (x.hit.indexOf(L) >= 0) return "La " + L + " ya se la pusiste a esta meta. Mira qué otra letra le falta.";
+  const seg = x.spec.segs.find(s => s.k === L);
+  if (x.spec.vk === "unreal" && (L === "M" || L === "T")) return "La " + L + " sí está, pero con un valor imposible. Lo que le falta es la A: ¿se puede lograr de verdad?";
+  if (seg) return "Esta meta ya tiene la " + L + " (" + LET[L].name + "): «" + seg.t + "».";
+  return "Esa letra no le hace falta a esta meta.";
+}
+/* qué dice la lupa de una meta */
+function tdLupaChips(x) {
+  const sp = x.spec;
+  if (sp.vk === "vague") return LK.map(k => ({ k, st: x.hit.indexOf(k) >= 0 ? "ok" : "miss", t: x.hit.indexOf(k) >= 0 ? "Agregada" : "Falta: " + LET[k].key }));
+  return LK.map(k => {
+    if (x.hit.indexOf(k) >= 0) return { k, st: "ok", t: "Agregada" };
+    if (sp.vk === "unreal" && k === "A") return { k, st: "bad", t: "No es alcanzable: número y plazo demasiado grandes" };
+    const seg = sp.segs.find(s => s.k === k);
+    if (seg) return { k, st: seg.bad ? "warn" : "ok", t: seg.t };
+    return { k, st: "miss", t: "Falta: " + LET[k].key };
+  });
+}
+
+"use strict";
+/* ============================================================
+   Motor de cristales tipo "match-3" (sin DOM)
+   Gema: {id, t: 0..4 letra (S M A R T) | 5 arcoíris, sp: 0 normal | 1 fila | 2 columna | 3 bomba | 4 arcoíris}
+   ============================================================ */
+let GEM_ID = 1;
+
+class Board {
+  constructor(cfg, rand) {
+    this.cfg = cfg;
+    this.N = cfg.size;
+    this.rand = rand || Math.random;
+    this.types = cfg.types || 5;
+    this.grid = [];
+    this.ice = [];
+    this.score = 0;
+    this.collected = [0, 0, 0, 0, 0];
+    this.totalCleared = 0;
+    this.moves = cfg.moves;
+    this.iceLeft = 0;
+    this.hammers = cfg.hammers || 0;
+    const N = this.N;
+    for (let r = 0; r < N; r++) { this.grid.push(new Array(N).fill(null)); this.ice.push(new Array(N).fill(0)); }
+    (cfg.ice || []).forEach(i => { this.ice[i.r][i.c] = i.h; this.iceLeft += i.h; });
+    this.fillInitial();
+  }
+
+  newGem(t, sp) { return { id: GEM_ID++, t: t, sp: sp || 0 }; }
+  randType() { return Math.floor(this.rand() * this.types); }
+  get(r, c) { return r >= 0 && c >= 0 && r < this.N && c < this.N ? this.grid[r][c] : null; }
+
+  fillInitial() {
+    const N = this.N;
+    for (let tries = 0; tries < 200; tries++) {
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+        let t, g = 0;
+        do {
+          t = this.randType(); g++;
+          const l1 = this.get(r, c - 1), l2 = this.get(r, c - 2), u1 = this.get(r - 1, c), u2 = this.get(r - 2, c);
+          if (g > 30) break;
+          if (l1 && l2 && l1.t === t && l2.t === t) continue;
+          if (u1 && u2 && u1.t === t && u2.t === t) continue;
+          break;
+        } while (true);
+        this.grid[r][c] = this.newGem(t);
+      }
+      if (!this.findGroups().length && this.hasMoves()) return;
+    }
+  }
+
+  /* ¿la gema en (r,c) forma 3+ en fila o columna? */
+  matchAt(r, c) {
+    const g = this.get(r, c);
+    if (!g || g.t > 4) return false;
+    let n = 1, i;
+    for (i = c - 1; this.get(r, i) && this.get(r, i).t === g.t; i--) n++;
+    for (i = c + 1; this.get(r, i) && this.get(r, i).t === g.t; i++) n++;
+    if (n >= 3) return true;
+    n = 1;
+    for (i = r - 1; this.get(i, c) && this.get(i, c).t === g.t; i--) n++;
+    for (i = r + 1; this.get(i, c) && this.get(i, c).t === g.t; i++) n++;
+    return n >= 3;
+  }
+
+  swapCells(r1, c1, r2, c2) {
+    const t = this.grid[r1][c1]; this.grid[r1][c1] = this.grid[r2][c2]; this.grid[r2][c2] = t;
+  }
+
+  /* corridas de 3+ y grupos (L/T) unidos */
+  findGroups() {
+    const N = this.N, runs = [];
+    for (let r = 0; r < N; r++) {
+      let c = 0;
+      while (c < N) {
+        const g = this.grid[r][c];
+        if (!g || g.t > 4) { c++; continue; }
+        let e = c + 1;
+        while (e < N && this.grid[r][e] && this.grid[r][e].t === g.t) e++;
+        if (e - c >= 3) { const cells = []; for (let k = c; k < e; k++) cells.push([r, k]); runs.push({ t: g.t, dir: "h", cells }); }
+        c = e;
+      }
+    }
+    for (let c = 0; c < N; c++) {
+      let r = 0;
+      while (r < N) {
+        const g = this.grid[r][c];
+        if (!g || g.t > 4) { r++; continue; }
+        let e = r + 1;
+        while (e < N && this.grid[e][c] && this.grid[e][c].t === g.t) e++;
+        if (e - r >= 3) { const cells = []; for (let k = r; k < e; k++) cells.push([k, c]); runs.push({ t: g.t, dir: "v", cells }); }
+        r = e;
+      }
+    }
+    if (!runs.length) return [];
+    // unir corridas que comparten celdas
+    const parent = runs.map((_, i) => i);
+    const find = x => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+    const owner = {};
+    runs.forEach((run, i) => run.cells.forEach(([r, c]) => {
+      const key = r * N + c;
+      if (owner[key] !== undefined) parent[find(i)] = find(owner[key]); else owner[key] = i;
+    }));
+    const groups = {};
+    runs.forEach((run, i) => { const k = find(i); (groups[k] = groups[k] || { t: run.t, runs: [], map: {} }).runs.push(run); });
+    return Object.values(groups).map(g => {
+      g.runs.forEach(run => run.cells.forEach(([r, c]) => { g.map[r * N + c] = [r, c]; }));
+      g.cells = Object.values(g.map);
+      return g;
+    });
+  }
+
+  specialFor(g, swap) {
+    const hr = g.runs.filter(x => x.dir === "h"), vr = g.runs.filter(x => x.dir === "v");
+    const maxLen = Math.max.apply(null, g.runs.map(x => x.cells.length));
+    let sp, t = g.t, run = null;
+    if (maxLen >= 5) { sp = 4; t = 5; run = g.runs.find(x => x.cells.length >= 5); }
+    else if (hr.length && vr.length) { sp = 3; }
+    else if (maxLen === 4) { run = g.runs.find(x => x.cells.length === 4); sp = run.dir === "h" ? 1 : 2; }
+    else return null;
+    let pos = null;
+    if (swap) { const hit = swap.filter(([r, c]) => g.cells.some(([rr, cc]) => rr === r && cc === c)); if (hit.length) pos = hit[0]; }
+    if (!pos && sp === 3) {
+      for (const [r, c] of hr[0].cells) { if (vr.some(v => v.cells.some(([rr, cc]) => rr === r && cc === c))) { pos = [r, c]; break; } }
+    }
+    if (!pos) { const rr = run || g.runs[0]; pos = rr.cells[Math.floor(rr.cells.length / 2)]; }
+    return { r: pos[0], c: pos[1], gem: this.newGem(t, sp) };
+  }
+
+  /* combos de especiales al intercambiar */
+  specialCombo(r1, c1, r2, c2) {
+    const N = this.N;
+    const a = this.grid[r1][c1], b = this.grid[r2][c2];
+    if (!a || !b) return null;
+    const forced = new Set(), fx = [];
+    if (a.sp === 4 || b.sp === 4) {
+      const rb = a.sp === 4 ? a : b, other = rb === a ? b : a;
+      const rbPos = rb === a ? [r1, c1] : [r2, c2];
+      forced.add(rbPos[0] * N + rbPos[1]);
+      rb.sp = 0; // el arcoíris se consume en el combo
+      if (other.sp === 4) {
+        other.sp = 0;
+        for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) forced.add(r * N + c);
+        fx.push({ kind: "rainbow", r: rbPos[0], c: rbPos[1], all: true });
+      } else {
+        const t = other.t;
+        for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+          const g = this.grid[r][c];
+          if (g && g.t === t) {
+            if (other.sp > 0) g.sp = other.sp === 3 ? 3 : (this.rand() < 0.5 ? 1 : 2);
+            forced.add(r * N + c);
+          }
+        }
+        fx.push({ kind: "rainbow", r: rbPos[0], c: rbPos[1], t, convert: other.sp > 0 });
+      }
+      return { forced, fx };
+    }
+    if (a.sp > 0 && b.sp > 0) {
+      forced.add(r1 * N + c1); forced.add(r2 * N + c2);
+      return { forced, fx };
+    }
+    return null;
+  }
+
+  hasMoves() {
+    const N = this.N;
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const a = this.grid[r][c]; if (!a) continue;
+      const nb = [[r, c + 1], [r + 1, c]];
+      for (const [r2, c2] of nb) {
+        if (r2 >= N || c2 >= N) continue;
+        const b = this.grid[r2][c2]; if (!b) continue;
+        if (a.sp === 4 || b.sp === 4 || (a.sp > 0 && b.sp > 0)) return true;
+        this.swapCells(r, c, r2, c2);
+        const ok = this.matchAt(r, c) || this.matchAt(r2, c2);
+        this.swapCells(r, c, r2, c2);
+        if (ok) return true;
+      }
+    }
+    return false;
+  }
+
+  listMoves() {
+    const N = this.N, out = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const a = this.grid[r][c]; if (!a) continue;
+      for (const [r2, c2] of [[r, c + 1], [r + 1, c]]) {
+        if (r2 >= N || c2 >= N) continue;
+        const b = this.grid[r2][c2]; if (!b) continue;
+        let ok = a.sp === 4 || b.sp === 4 || (a.sp > 0 && b.sp > 0);
+        if (!ok) { this.swapCells(r, c, r2, c2); ok = this.matchAt(r, c) || this.matchAt(r2, c2); this.swapCells(r, c, r2, c2); }
+        if (ok) out.push([r, c, r2, c2]);
+      }
+    }
+    return out;
+  }
+
+  trySwap(r1, c1, r2, c2) {
+    if (Math.abs(r1 - r2) + Math.abs(c1 - c2) !== 1) return { ok: false };
+    if (this.moves <= 0) return { ok: false };
+    const a = this.grid[r1][c1], b = this.grid[r2][c2];
+    if (!a || !b) return { ok: false };
+    this.swapCells(r1, c1, r2, c2);
+    const combo = this.specialCombo(r2, c2, r1, c1); // tras el intercambio, a está en (r2,c2) y b en (r1,c1)
+    const groups = this.findGroups();
+    if (!combo && !groups.length) { this.swapCells(r1, c1, r2, c2); return { ok: false }; }
+    this.moves--;
+    const rounds = this.resolve({ swap: [[r1, c1], [r2, c2]], forced: combo ? combo.forced : null, fx: combo ? combo.fx : null });
+    return this.finish(rounds);
+  }
+
+  useHammer(r, c) {
+    if (this.hammers <= 0 || !this.grid[r][c]) return { ok: false };
+    this.hammers--;
+    const rounds = this.resolve({ forced: new Set([r * this.N + c]) });
+    return this.finish(rounds);
+  }
+
+  finish(rounds) {
+    let shuffled = null;
+    if (!this.done() && this.moves > 0 && !this.hasMoves()) shuffled = this.shuffleBoard();
+    return { ok: true, rounds, shuffled };
+  }
+
+  resolve(opts) {
+    const N = this.N, rounds = [];
+    let combo = 0, first = true;
+    for (let guard = 0; guard < 60; guard++) {
+      const clear = new Map(), spawns = [], fx = [];
+      if (first && opts.forced) { opts.forced.forEach(i => clear.set(i, true)); (opts.fx || []).forEach(f => fx.push(f)); }
+      const groups = this.findGroups();
+      for (const g of groups) {
+        g.cells.forEach(([r, c]) => clear.set(r * N + c, true));
+        const sp = this.specialFor(g, first ? opts.swap : null);
+        if (sp) spawns.push(sp);
+      }
+      if (!clear.size) break;
+      // cadena de especiales
+      const queue = Array.from(clear.keys()), seen = new Set(queue);
+      let specialsFired = 0;
+      while (queue.length) {
+        const i = queue.pop(), r = Math.floor(i / N), c = i % N;
+        const g = this.grid[r][c];
+        if (!g || !g.sp) continue;
+        specialsFired++;
+        const add = [];
+        if (g.sp === 1) { for (let k = 0; k < N; k++) add.push(r * N + k); fx.push({ kind: "row", r, c }); }
+        else if (g.sp === 2) { for (let k = 0; k < N; k++) add.push(k * N + c); fx.push({ kind: "col", r, c }); }
+        else if (g.sp === 3) { for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) { if (Math.abs(dr) + Math.abs(dc) > 3) continue; const rr = r + dr, cc = c + dc; if (rr >= 0 && cc >= 0 && rr < N && cc < N) add.push(rr * N + cc); } fx.push({ kind: "bomb", r, c }); }
+        else if (g.sp === 4) {
+          const count = {};
+          for (let rr = 0; rr < N; rr++) for (let cc = 0; cc < N; cc++) { const x = this.grid[rr][cc]; if (x && x.t < 5) count[x.t] = (count[x.t] || 0) + 1; }
+          let best = -1, bc = -1; for (const k in count) if (count[k] > bc) { bc = count[k]; best = +k; }
+          for (let rr = 0; rr < N; rr++) for (let cc = 0; cc < N; cc++) { const x = this.grid[rr][cc]; if (x && x.t === best) add.push(rr * N + cc); }
+          fx.push({ kind: "rainbow", r, c, t: best });
+        }
+        add.forEach(j => { if (!seen.has(j)) { seen.add(j); clear.set(j, true); queue.push(j); } });
+      }
+      // recoger
+      const clearedList = [], iceHits = [];
+      let n = 0;
+      clear.forEach((_, i) => {
+        const r = Math.floor(i / N), c = i % N, g = this.grid[r][c];
+        if (!g) return;
+        clearedList.push({ id: g.id, r, c, t: g.t, sp: g.sp });
+        n++;
+        if (g.t < 5) this.collected[g.t]++;
+        if (this.ice[r][c] > 0) { this.ice[r][c]--; this.iceLeft--; iceHits.push({ r, c, left: this.ice[r][c] }); }
+        this.grid[r][c] = null;
+      });
+      this.totalCleared += n;
+      const gain = Math.round(n * 10 * (1 + combo * 0.5)) + specialsFired * 40 + spawns.length * 20;
+      this.score += gain;
+      // especiales nuevos
+      const spawned = [];
+      spawns.forEach(s => { this.grid[s.r][s.c] = s.gem; spawned.push({ id: s.gem.id, t: s.gem.t, sp: s.gem.sp, r: s.r, c: s.c }); });
+      // gravedad + relleno
+      const moved = [], created = [];
+      for (let c = 0; c < N; c++) {
+        let w = N - 1;
+        for (let r = N - 1; r >= 0; r--) {
+          const g = this.grid[r][c];
+          if (g) { if (w !== r) { this.grid[w][c] = g; this.grid[r][c] = null; moved.push({ id: g.id, r: w, c, from: r }); } w--; }
+        }
+        const missing = w + 1;
+        for (let r = w; r >= 0; r--) {
+          const g = this.newGem(this.randType());
+          this.grid[r][c] = g;
+          created.push({ id: g.id, t: g.t, sp: 0, r, c, from: r - missing });
+        }
+      }
+      rounds.push({ cleared: clearedList, fx, spawned, moved, created, gain, combo, iceHits, score: this.score });
+      combo++; first = false;
+    }
+    return rounds;
+  }
+
+  shuffleBoard() {
+    const N = this.N;
+    const gems = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) gems.push(this.grid[r][c]);
+    for (let tries = 0; tries < 120; tries++) {
+      for (let i = gems.length - 1; i > 0; i--) { const j = Math.floor(this.rand() * (i + 1)); const t = gems[i]; gems[i] = gems[j]; gems[j] = t; }
+      gems.forEach((g, i) => { this.grid[Math.floor(i / N)][i % N] = g; });
+      if (!this.findGroups().length && this.hasMoves()) break;
+      if (tries === 119) {
+        gems.forEach((g, i) => { if (g.t < 5 && g.sp === 0) g.t = this.randType(); this.grid[Math.floor(i / N)][i % N] = g; });
+        for (let k = 0; k < 40 && (this.findGroups().length || !this.hasMoves()); k++) {
+          gems.forEach(g => { if (g.sp === 0) g.t = this.randType(); });
+        }
+      }
+    }
+    const out = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) out.push({ id: this.grid[r][c].id, r, c });
+    return out;
+  }
+
+  progress() {
+    const goals = (this.cfg.goals || []).map(g => ({ t: g.t, n: g.n, have: Math.min(g.n, this.collected[g.t]) }));
+    const done = goals.every(g => g.have >= g.n) && this.iceLeft <= 0 && this.score >= (this.cfg.score || 0);
+    return { goals, iceLeft: this.iceLeft, iceTotal: this.cfg.ice ? this.cfg.ice.reduce((a, b) => a + b.h, 0) : 0, score: this.score, target: this.cfg.score || 0, done };
+  }
+  done() { return this.progress().done; }
+}
+
+/* ---------- Bot para calibrar la dificultad (solo pruebas) ---------- */
+function botPlay(cfg, rand, mode) {
+  const b = new Board(cfg, rand);
+  const wantT = new Set((cfg.goals || []).map(g => g.t));
+  let guard = 0;
+  while (b.moves > 0 && !b.done() && guard++ < 200) {
+    const moves = b.listMoves();
+    if (!moves.length) { b.shuffleBoard(); continue; }
+    let pick;
+    if (mode === "random") pick = moves[Math.floor(rand() * moves.length)];
+    else {
+      let best = -1e9;
+      for (const m of moves) {
+        const [r, c, r2, c2] = m;
+        const a = b.grid[r][c], g2 = b.grid[r2][c2];
+        let s = 0;
+        if (a.sp === 4 || g2.sp === 4) s += 12; else if (a.sp > 0 && g2.sp > 0) s += 10;
+        b.swapCells(r, c, r2, c2);
+        for (const g of b.findGroups()) {
+          s += g.cells.length * (1 + (wantT.has(g.t) ? 1.2 : 0));
+          g.cells.forEach(([rr, cc]) => { if (b.ice[rr][cc] > 0) s += 2.5; });
+          const mx = Math.max.apply(null, g.runs.map(x => x.cells.length));
+          if (mx >= 4) s += 3; if (mx >= 5) s += 5;
+        }
+        b.swapCells(r, c, r2, c2);
+        s += rand() * 1.5;
+        if (s > best) { best = s; pick = m; }
+      }
+    }
+    b.trySwap(pick[0], pick[1], pick[2], pick[3]);
+  }
+  return { win: b.done(), movesLeft: b.moves, score: b.score, b };
+}
+
+"use strict";
+/* ============================================================
+   Audio sintetizado con WebAudio: efectos + música distinta por mundo
+   ============================================================ */
+const Snd = (function () {
+  let ctx = null, master = null, sfxG = null, musG = null, noiseBuf = null;
+  const st = { music: true, sfx: true };
+  let want = null, timer = null, nextT = 0, step = 0, pat = null, cur = null;
+
+  const SC = {
+    major: [0, 2, 4, 5, 7, 9, 11], dorian: [0, 2, 3, 5, 7, 9, 10], mixo: [0, 2, 4, 5, 7, 9, 10],
+    pent: [0, 2, 4, 7, 9], lyd: [0, 2, 4, 6, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10]
+  };
+  const WM = [
+    { root: 57, sc: "major", bpm: 108, prog: [0, 5, 3, 4], lead: "triangle" },
+    { root: 55, sc: "dorian", bpm: 114, prog: [0, 3, 0, 4], lead: "square" },
+    { root: 52, sc: "mixo", bpm: 118, prog: [0, 6, 3, 4], lead: "triangle" },
+    { root: 53, sc: "pent", bpm: 104, prog: [0, 2, 3, 2], lead: "sine" },
+    { root: 50, sc: "major", bpm: 122, prog: [0, 4, 5, 3], lead: "square" },
+    { root: 48, sc: "minor", bpm: 100, prog: [0, 5, 2, 6], lead: "triangle" },
+    { root: 55, sc: "lyd", bpm: 126, prog: [0, 1, 4, 0], lead: "sawtooth" },
+    { root: 50, sc: "minor", bpm: 116, prog: [0, 5, 3, 4], lead: "square" },
+    { root: 52, sc: "dorian", bpm: 128, prog: [0, 3, 4, 3], lead: "square" },
+    { root: 57, sc: "pent", bpm: 124, prog: [0, 2, 4, 2], lead: "triangle" },
+    { root: 48, sc: "mixo", bpm: 132, prog: [0, 6, 5, 6], lead: "sawtooth" },
+    { root: 53, sc: "minor", bpm: 136, prog: [0, 5, 6, 4], lead: "square" }
+  ];
+
+  function ensure() {
+    if (ctx) { if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) { } } return true; }
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      ctx = new AC();
+      const comp = ctx.createDynamicsCompressor();
+      comp.connect(ctx.destination);
+      master = ctx.createGain(); master.gain.value = 0.9; master.connect(comp);
+      sfxG = ctx.createGain(); sfxG.gain.value = st.sfx ? 0.8 : 0; sfxG.connect(master);
+      musG = ctx.createGain(); musG.gain.value = st.music ? 0.32 : 0; musG.connect(master);
+      const len = ctx.sampleRate;
+      noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      return true;
+    } catch (e) { ctx = null; return false; }
+  }
+  const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+
+  function tone(f, t, d, o) {
+    o = o || {};
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type = o.type || "sine";
+    osc.frequency.setValueAtTime(f, t);
+    if (o.slide) osc.frequency.exponentialRampToValueAtTime(Math.max(30, f * o.slide), t + d);
+    const vol = o.vol === undefined ? 0.25 : o.vol, att = o.att || 0.006, rel = o.rel || 0.06;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + att);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d + rel);
+    osc.connect(g); g.connect(o.dest || sfxG);
+    osc.start(t); osc.stop(t + d + rel + 0.03);
+  }
+  function noise(t, d, o) {
+    o = o || {};
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+    const fl = ctx.createBiquadFilter(); fl.type = o.type || "lowpass";
+    fl.frequency.setValueAtTime(o.f0 || 2000, t);
+    if (o.f1) fl.frequency.exponentialRampToValueAtTime(o.f1, t + d);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(o.vol || 0.2, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    src.connect(fl); fl.connect(g); g.connect(o.dest || sfxG);
+    src.start(t); src.stop(t + d + 0.02);
+  }
+  const PENT = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+  function S(fn) { return function () { if (!st.sfx || !ensure()) return; try { fn.apply(null, arguments); } catch (e) { } }; }
+
+  const sfx = {
+    click: S(() => { const t = ctx.currentTime; tone(660, t, 0.05, { type: "triangle", vol: 0.15 }); }),
+    select: S(() => { const t = ctx.currentTime; tone(520, t, 0.06, { type: "triangle", vol: 0.18 }); tone(780, t + 0.05, 0.07, { type: "triangle", vol: 0.14 }); }),
+    swap: S(() => { const t = ctx.currentTime; noise(t, 0.12, { type: "bandpass", f0: 600, f1: 1800, vol: 0.12 }); tone(300, t, 0.1, { type: "sine", vol: 0.1, slide: 1.6 }); }),
+    bad: S(() => { const t = ctx.currentTime; tone(180, t, 0.12, { type: "square", vol: 0.1, slide: 0.7 }); tone(150, t + 0.1, 0.14, { type: "square", vol: 0.1, slide: 0.7 }); }),
+    match: S(combo => {
+      const t = ctx.currentTime, c = Math.min(combo || 0, 6), base = 60 + c * 2;
+      [0, 1, 2].forEach(i => tone(mtof(base + PENT[i + c % 3]), t + i * 0.06, 0.12, { type: "triangle", vol: 0.2 }));
+      noise(t, 0.08, { type: "highpass", f0: 5000, vol: 0.05 });
+    }),
+    special: S(() => { const t = ctx.currentTime; [0, 4, 7, 12, 16].forEach((n, i) => tone(mtof(72 + n), t + i * 0.05, 0.14, { type: "sine", vol: 0.16 })); }),
+    boom: S(() => { const t = ctx.currentTime; noise(t, 0.5, { type: "lowpass", f0: 2500, f1: 80, vol: 0.4 }); tone(120, t, 0.35, { type: "sine", vol: 0.35, slide: 0.3 }); }),
+    zap: S(() => { const t = ctx.currentTime; noise(t, 0.3, { type: "bandpass", f0: 4000, f1: 400, vol: 0.2 }); tone(900, t, 0.3, { type: "sawtooth", vol: 0.08, slide: 0.25 }); }),
+    rainbow: S(() => { const t = ctx.currentTime; for (let i = 0; i < 9; i++) tone(mtof(64 + PENT[i]), t + i * 0.045, 0.14, { type: "triangle", vol: 0.18 }); noise(t + 0.3, 0.4, { type: "highpass", f0: 3000, vol: 0.1 }); }),
+    ice: S(() => { const t = ctx.currentTime; noise(t, 0.12, { type: "highpass", f0: 6000, vol: 0.18 }); tone(1500, t, 0.08, { type: "sine", vol: 0.1, slide: 1.4 }); }),
+    ok: S(() => { const t = ctx.currentTime; [72, 76, 79].forEach((n, i) => tone(mtof(n), t + i * 0.08, 0.16, { type: "triangle", vol: 0.22 })); tone(mtof(84), t + 0.26, 0.3, { type: "sine", vol: 0.2 }); }),
+    no: S(() => { const t = ctx.currentTime; tone(300, t, 0.14, { type: "sine", vol: 0.2, slide: 0.6 }); tone(220, t + 0.12, 0.2, { type: "sine", vol: 0.2, slide: 0.6 }); }),
+    hint: S(() => { const t = ctx.currentTime; [79, 84, 88].forEach((n, i) => tone(mtof(n), t + i * 0.07, 0.12, { type: "sine", vol: 0.13 })); }),
+    shuffle: S(() => { const t = ctx.currentTime; for (let i = 0; i < 6; i++) tone(mtof(55 + i * 3), t + i * 0.04, 0.07, { type: "square", vol: 0.07 }); }),
+    star: S(i => { const t = ctx.currentTime; tone(mtof(76 + (i || 0) * 4), t, 0.3, { type: "triangle", vol: 0.25 }); tone(mtof(88 + (i || 0) * 4), t + 0.03, 0.4, { type: "sine", vol: 0.12 }); }),
+    win: S(() => { const t = ctx.currentTime; [60, 64, 67, 72, 67, 72, 76, 79, 84].forEach((n, i) => tone(mtof(n), t + i * 0.1, i === 8 ? 0.6 : 0.16, { type: "triangle", vol: 0.24 })); }),
+    lose: S(() => { const t = ctx.currentTime; [67, 64, 60, 55].forEach((n, i) => tone(mtof(n), t + i * 0.16, 0.22, { type: "sine", vol: 0.22 })); }),
+    unlock: S(() => { const t = ctx.currentTime; [60, 67, 72, 76, 84].forEach((n, i) => tone(mtof(n), t + i * 0.07, 0.2, { type: "square", vol: 0.1 })); }),
+    letter: S(() => { const t = ctx.currentTime; tone(880, t, 0.08, { type: "triangle", vol: 0.15 }); })
+  };
+
+  /* ------------ Música ------------ */
+  function deg2m(root, sc, d) { const s = SC[sc], n = s.length; return root + s[((d % n) + n) % n] + 12 * Math.floor(d / n); }
+  function buildPattern(w) {
+    const cfg = WM[w % WM.length], r = RNG(w * 97 + 11);
+    const mel = new Array(64).fill(null);
+    let prev = 4;
+    for (let bar = 0; bar < 4; bar++) {
+      const chordRoot = cfg.prog[bar];
+      for (let s = 0; s < 16; s++) {
+        const strong = s % 4 === 0;
+        if (r.f() < (strong ? 0.8 : 0.38)) {
+          let d;
+          if (strong && r.f() < 0.6) d = chordRoot + [0, 2, 4, 7][r.i(4)] + 7;
+          else d = prev + [-2, -1, -1, 0, 1, 1, 2][r.i(7)];
+          d = Math.max(chordRoot + 2, Math.min(chordRoot + 14, d));
+          mel[bar * 16 + s] = d; prev = d;
+        }
+      }
+    }
+    return { cfg, mel };
+  }
+  function schedStep(stp, t, mood) {
+    const { cfg, mel } = pat;
+    const bar = (stp >> 4) % 4, s = stp & 15, ch = cfg.prog[bar];
+    const sp = 60 / curBpm() / 4;
+    const play = mood === "play", think = mood === "think";
+    // bajo
+    if (s % 8 === 0) tone(mtof(deg2m(cfg.root - 12, cfg.sc, ch)), t, sp * 6, { type: "sine", vol: 0.5, dest: musG, att: 0.01, rel: 0.1 });
+    if (play && s % 8 === 6) tone(mtof(deg2m(cfg.root - 12, cfg.sc, ch + 4)), t, sp * 1.5, { type: "sine", vol: 0.3, dest: musG });
+    // arpegio suave
+    if (s % 2 === 0 && !think) {
+      const k = [0, 2, 4, 2][(s >> 1) % 4];
+      tone(mtof(deg2m(cfg.root, cfg.sc, ch + k)), t, sp * 1.6, { type: "sine", vol: play ? 0.16 : 0.1, dest: musG });
+    }
+    if (think && s % 8 === 0) { [0, 2, 4].forEach(k => tone(mtof(deg2m(cfg.root, cfg.sc, ch + k)), t, sp * 7, { type: "sine", vol: 0.1, dest: musG, att: 0.1, rel: 0.4 })); }
+    // melodía
+    const m = mel[bar * 16 + s];
+    if (m !== null && (!think || s % 8 === 0)) tone(mtof(deg2m(cfg.root + 12, cfg.sc, m)), t, sp * 1.8, { type: cfg.lead, vol: think ? 0.1 : mood === "menu" ? 0.13 : 0.16, dest: musG, rel: 0.12 });
+    // batería
+    if (play) {
+      if (s % 8 === 0) tone(110, t, 0.12, { type: "sine", vol: 0.5, slide: 0.35, dest: musG });
+      if (s % 8 === 4) noise(t, 0.1, { type: "bandpass", f0: 1800, vol: 0.22, dest: musG });
+      if (s % 2 === 0) noise(t, 0.03, { type: "highpass", f0: 7000, vol: s % 4 === 2 ? 0.1 : 0.05, dest: musG });
+    }
+  }
+  function curBpm() {
+    if (!cur) return 110;
+    const b = WM[cur.w % WM.length].bpm;
+    return cur.mood === "menu" ? b * 0.8 : cur.mood === "think" ? b * 0.7 : b;
+  }
+  function tick() {
+    if (!ctx || !cur) return;
+    while (nextT < ctx.currentTime + 0.18) {
+      try { schedStep(step, nextT, cur.mood); } catch (e) { }
+      nextT += 60 / curBpm() / 4; step++;
+    }
+  }
+  function stopLoop() { if (timer) { clearInterval(timer); timer = null; } }
+  function startLoop() {
+    stopLoop();
+    if (!want || !st.music || !ensure()) return;
+    cur = { w: want.w, mood: want.mood };
+    pat = buildPattern(want.w);
+    step = 0; nextT = ctx.currentTime + 0.08;
+    timer = setInterval(tick, 40);
+  }
+  function music(w, mood) {
+    if (want && want.w === w && want.mood === mood && timer) return;
+    want = { w, mood };
+    if (st.music && ctx) startLoop();
+  }
+  function setMusic(on) {
+    st.music = !!on;
+    if (!ensure()) return;
+    musG.gain.setTargetAtTime(on ? 0.32 : 0, ctx.currentTime, 0.05);
+    if (on) startLoop(); else stopLoop();
+  }
+  function setSfx(on) { st.sfx = !!on; if (ensure()) sfxG.gain.setTargetAtTime(on ? 0.8 : 0, ctx.currentTime, 0.02); }
+  function unlock() { if (ensure() && want && st.music && !timer) startLoop(); }
+  function hidden(h) {
+    if (!ctx) return;
+    try { if (h) { ctx.suspend(); } else { ctx.resume(); } } catch (e) { }
+  }
+  function speak(text) {
+    try {
+      if (!("speechSynthesis" in window)) return false;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "es-ES"; u.rate = 0.95;
+      const vs = window.speechSynthesis.getVoices().filter(v => /^es/i.test(v.lang));
+      if (vs.length) u.voice = vs[0];
+      window.speechSynthesis.speak(u);
+      return true;
+    } catch (e) { return false; }
+  }
+  function stopSpeak() { try { window.speechSynthesis.cancel(); } catch (e) { } }
+  return { sfx, music, setMusic, setSfx, unlock, hidden, speak, stopSpeak, st };
+})();
+
+"use strict";
+/* ============================================================
+   Interfaz · núcleo: guardado, pantallas, mapa, ventanas
+   ============================================================ */
+const $ = (s, r) => (r || document).querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const KEY = "smartquest.v1";
+const MAXLV = 300;
+
+let S = { v: 1, name: "", stars: {}, music: true, sfx: true, teacher: false, seen: {} };
+let cur = { s: "title" };
+let CONF = null, MODAL = null, LS = null;
+let memStore = null; // respaldo si localStorage no está disponible
+
+function load() {
+  try {
+    const j = window.localStorage.getItem(KEY);
+    if (j) { const o = JSON.parse(j); S = Object.assign(S, o); }
+  } catch (e) { if (memStore) S = Object.assign(S, memStore); }
+  if (!S.stars || typeof S.stars !== "object") S.stars = {};
+  if (!S.seen || typeof S.seen !== "object") S.seen = {};
+}
+function save() {
+  memStore = JSON.parse(JSON.stringify(S));
+  try { window.localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { }
+}
+
+/* ---------- progreso ---------- */
+const starsOf = n => S.stars[n] || 0;
+function maxDone() { let m = 0; for (const k in S.stars) if (S.stars[k] > 0) m = Math.max(m, +k); return m; }
+function unlockedMax() { return S.teacher ? MAXLV : Math.min(MAXLV, maxDone() + 1); }
+function worldStars(w) { let t = 0; for (let i = 1; i <= 25; i++) t += starsOf(w * 25 + i); return t; }
+function worldDone(w) { let t = 0; for (let i = 1; i <= 25; i++) if (starsOf(w * 25 + i) > 0) t++; return t; }
+function totalStars() { let t = 0; for (const k in S.stars) t += S.stars[k]; return t; }
+
+/* ---------- ayudas de HTML ---------- */
+const scr = () => $("#screen");
+function gi(t, extra) { return '<span class="gi gx g' + t + " " + (extra || "") + '"><span class="sh"></span><b>' + (t === 5 ? "★" : SMARTLET[t]) + "</b></span>"; }
+const starStr = n => "★".repeat(n) + "☆".repeat(3 - n);
+function setTheme(w) {
+  const W = WORLDS[w], st = document.documentElement.style;
+  st.setProperty("--g1", W.g[0]); st.setProperty("--g2", W.g[1]); st.setProperty("--glow", W.glow);
+}
+function render(html) {
+  const s = scr(); s.innerHTML = html;
+  if (s.firstElementChild) s.firstElementChild.classList.add("fade");
+  window.scrollTo(0, 0);
+}
+function topHTML(o) {
+  cur.top = o;
+  return '<div class="topbar"><div class="grp">' +
+    (o.back ? '<button class="ib" data-act="' + o.back + '" aria-label="Volver">◀</button>' : '<span style="width:42px"></span>') +
+    '</div><div class="crumb">' + esc(o.title || "") + '</div><div class="grp">' +
+    '<button class="ib' + (Snd.st.music ? "" : " off") + '" data-act="tglMusic" aria-label="Música">🎵</button>' +
+    '<button class="ib' + (Snd.st.sfx ? "" : " off") + '" data-act="tglSfx" aria-label="Efectos de sonido">🔊</button>' +
+    '<button class="ib" data-act="book" aria-label="Cuaderno SMART">📓</button>' +
+    '<button class="ib" data-act="settings" aria-label="Ajustes">⚙️</button></div></div>';
+}
+function setTop(o) { $("#top").innerHTML = o ? topHTML(o) : ""; }
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 2300);
+}
+const ZAFI = '<svg class="face" viewBox="0 0 64 64" aria-hidden="true"><polygon points="32,3 61,32 32,61 3,32" fill="#3b9bff"/><polygon points="32,3 61,32 32,32" fill="#8fcaff"/><circle cx="24" cy="31" r="4.6" fill="#fff"/><circle cx="40" cy="31" r="4.6" fill="#fff"/><circle cx="25" cy="32" r="2.2" fill="#1b1b3a"/><circle cx="41" cy="32" r="2.2" fill="#1b1b3a"/><path d="M24 41q8 7 16 0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>';
+
+/* ---------- ventanas ---------- */
+function openModal(html, o) {
+  o = o || {};
+  const ov = $("#overlay");
+  ov.innerHTML = '<div class="modal" role="dialog" aria-modal="true">' + html + "</div>";
+  ov.classList.add("on");
+  MODAL = { dismiss: o.dismiss !== false, onClose: o.onClose || null };
+  const m = ov.firstElementChild; if (m) m.scrollTop = 0;
+}
+function closeModal(silent) {
+  const ov = $("#overlay"); ov.classList.remove("on"); ov.innerHTML = "";
+  const m = MODAL; MODAL = null;
+  if (m && m.onClose && !silent) m.onClose();
+}
+const modalOpen = () => $("#overlay").classList.contains("on");
+function confirmModal(msg, yesLabel, fn) {
+  CONF = fn;
+  openModal("<h2>¿Seguro?</h2><p class='sub'>" + msg + "</p><div class='acts'><button class='btn' data-act='confirmYes'>" + yesLabel + "</button><button class='btn ghost' data-act='closeModal'>Cancelar</button></div>");
+}
+
+/* ---------- Pantalla de título ---------- */
+function screenTitle() {
+  cur = { s: "title" }; setTheme(0); Snd.music(0, "menu"); setTop(null);
+  const has = Object.keys(S.stars).length > 0;
+  const hello = S.name ? "<p class='lead'>¡Hola, <b>" + esc(S.name) + "</b>! Llevas " + totalStars() + " ⭐ de 900.</p>" : "<p class='lead'>Une cristales y aprende a convertir deseos en metas SMART.</p>";
+  const nameBox = S.name || S.seen.skipName ? "" : '<div class="namebox"><input id="nm" type="text" maxlength="18" placeholder="Tu nombre (opcional)" autocomplete="off"><button class="btn small" data-act="saveName">OK</button></div>';
+  render('<section class="title"><div class="logo">' + LK.map((k, i) => gi(i)).join("") + "</div><h1>SMART QUEST</h1>" + hello + nameBox +
+    '<div class="menu"><button class="btn" data-act="play">▶ ' + (has ? "Continuar" : "¡Jugar!") + '</button>' +
+    '<button class="btn ghost" data-act="worlds">🗺️ Mundos</button>' +
+    '<button class="btn ghost" data-act="book">📓 Cuaderno SMART</button>' +
+    '<button class="btn ghost" data-act="settings">⚙️ Ajustes y sonido</button></div>' +
+    '<div class="credit">300 niveles · 12 mundos · basado en la clase «Metas SMART · Fintech»</div></section>');
+}
+
+/* ---------- Mundos ---------- */
+function screenWorlds() {
+  cur = { s: "worlds" }; setTheme(0); Snd.music(0, "menu");
+  setTop({ back: "title", title: "Mundos" });
+  const um = unlockedMax();
+  const cards = WORLDS.map(W => {
+    const first = W.id * 25 + 1, lock = first > um;
+    const st = worldStars(W.id), dn = worldDone(W.id);
+    return '<button class="wcard' + (lock ? " lock" : "") + '" data-act="openWorld" data-w="' + W.id + '" style="--w1:' + W.g[0] + ";--w2:" + W.g[1] + '"' + (lock ? ' aria-disabled="true"' : "") + ">" +
+      '<span class="em">' + W.emoji + "</span><h3>" + W.name + "</h3><small>" + W.short + '</small><div class="bar"><i style="width:' + Math.round(dn / 25 * 100) + '%"></i></div>' +
+      '<div class="pr"><span>' + dn + "/25 niveles</span><span>⭐ " + st + "/75</span></div></button>";
+  }).join("");
+  render('<section><div class="whead"><h2>Elige un mundo</h2><p class="muted" style="margin:4px 0 0">Cada mundo enseña una parte de SMART</p></div><div class="wgrid">' + cards + "</div></section>");
+}
+
+function screenLevels(w) {
+  cur = { s: "levels", w }; setTheme(w); Snd.music(w, "menu");
+  const W = WORLDS[w];
+  setTop({ back: "worlds", title: W.name });
+  const um = unlockedMax();
+  let cells = "";
+  for (let i = 1; i <= 25; i++) {
+    const n = w * 25 + i, st = starsOf(n), lock = n > um, isCur = n === um && !st;
+    const base = "lv" + (st ? " done" : "") + (isCur ? " cur" : "") + (lock ? " lock" : "");
+    if (i === 25) cells += '<button class="' + base + ' boss" data-act="level" data-n="' + n + '"><span class="be">' + W.bossEmoji + "</span><span>Jefe · " + W.boss + '</span><span class="st">' + (st ? starStr(st) : "") + "</span></button>";
+    else cells += '<button class="' + base + '" data-act="level" data-n="' + n + '" aria-label="Nivel ' + n + '">' + n + '<span class="st">' + (st ? starStr(st) : "") + "</span></button>";
+  }
+  render('<section><div class="whead"><div class="em">' + W.emoji + "</div><h2>" + W.name + "</h2><p class='muted' style='margin:4px 0 12px'>" + W.blurb + '</p><button class="btn small ghost" data-act="lesson" data-w="' + w + '">📖 Ver lección del mundo</button></div><div class="lmap">' + cells + "</div></section>");
+}
+
+/* ---------- Lecciones ---------- */
+function lessonModal(w, after) {
+  LS = { w, i: 0, after: after || null };
+  drawLesson();
+}
+function drawLesson() {
+  const sl = LESSONS[LS.w], s = sl[LS.i], last = LS.i === sl.length - 1;
+  openModal('<div class="zafi">' + ZAFI + '<div class="bubble"><h3>' + s.t + "</h3>" + s.h + "</div></div>" +
+    '<div class="pager">' + sl.map((_, i) => '<i class="' + (i === LS.i ? "on" : "") + '"></i>').join("") + "</div>" +
+    '<div class="acts">' + (last ? '<button class="btn green" data-act="lessonDone">¡Entendido! ✔</button>' : '<button class="btn" data-act="lessonNext">Siguiente ▶</button>') +
+    (LS.i > 0 ? '<button class="btn ghost small" data-act="lessonPrev">◀ Anterior</button>' : "") + "</div>", { dismiss: false });
+}
+
+/* ---------- Abrir un nivel ---------- */
+function openLevel(n) {
+  const info = lvInfo(n);
+  setTheme(info.w);
+  if (info.idx === 1 && !S.seen["w" + info.w]) {
+    lessonModal(info.w, () => { S.seen["w" + info.w] = 1; save(); levelIntro(n); });
+    return;
+  }
+  levelIntro(n);
+}
+function goalLine(cfg) {
+  const rows = [];
+  cfg.goals.forEach(g => rows.push(gi(g.t) + " <b>×" + g.n + "</b> cristales " + LET[LK[g.t]].name.toLowerCase()));
+  if (cfg.ice.length) rows.push("❄️ Rompe <b>todo el hielo</b> (" + cfg.ice.reduce((a, b) => a + b.h, 0) + " golpes)");
+  if (cfg.score) rows.push("⭐ Consigue <b>" + cfg.score + "</b> puntos");
+  return rows.map(r => '<div class="goal" style="font-size:16px;border-radius:14px">' + r + "</div>").join("");
+}
+function levelIntro(n) {
+  if (lvInfo(n).w >= TD_FIRST) { tdIntro(n); return; }
+  const info = lvInfo(n), cfg = levelConfig(n), W = WORLDS[info.w], nq = numQuestions(info);
+  const tut = !S.seen.tut ? '<div class="tip">👆 <b>Cómo jugar:</b> desliza un cristal hacia su vecino para formar 3 o más iguales. Con 4 creas un <b>rayo</b>, con 5 un <b>arcoíris</b> y con una L o una T una <b>bomba</b>. ¡Cada cristal es una letra de SMART!</div>' : "";
+  openModal("<h2>" + (info.boss ? W.bossEmoji + " Jefe: " + W.boss : "Nivel " + n) + '</h2><p class="sub">' + W.name + (info.boss ? " · Nivel " + n : "") + "</p>" +
+    '<div class="col"><div class="muted" style="text-align:center;font-size:14px">Paso 1 · Cristales (' + cfg.moves + " jugadas)</div>" + goalLine(cfg) +
+    '<div class="muted" style="text-align:center;font-size:14px">Paso 2 · Reto SMART (' + nq + " preguntas)</div></div>" + tut +
+    '<div class="acts"><button class="btn" data-act="startBoard" data-n="' + n + '">¡A jugar! ▶</button><button class="btn ghost small" data-act="lesson" data-w="' + info.w + '">📖 Repasar la lección</button></div>');
+}
+
+/* ---------- Cuaderno SMART ---------- */
+function bookModal() {
+  const letters = LK.map((k, i) => {
+    const L = LET[k];
+    return '<div class="lcard" style="--c:' + L.color + '">' + gi(i, "lg") + "<div><h4>" + k + " · " + L.name + '</h4><p>' + L.rule + '</p><p><small>' + L.key + " · Inglés: " + L.en + " · Original 1981: " + L.orig + "</small></p></div></div>";
+  }).join("");
+  const rows = TABLE.map(r => "<tr><td><b>" + r[0] + "</b></td><td>" + r[1] + "</td><td>" + r[2] + "</td><td>" + r[3] + "</td></tr>").join("");
+  const lessons = LESSONS.map((sl, w) => "<details><summary>" + WORLDS[w].emoji + " " + WORLDS[w].name + "</summary>" +
+    sl.map(s => "<h3 style='font-size:18px;color:var(--gold);margin:8px 0 4px'>" + s.t + "</h3><div style='font-size:15px'>" + s.h + "</div>").join("") + "</details>").join("");
+  openModal("<h2>📓 Cuaderno SMART</h2><p class='sub'>Todo lo que aprendes en el juego, en un solo lugar.</p>" +
+    '<div class="zafi">' + ZAFI + '<div class="bubble"><b>Un deseo no es una meta.</b> Una meta es un deseo con <b>número y fecha</b>. Una <b>meta SMART</b> cumple las 5 letras. Nació con <b>Doran en 1981</b> (Drucker propuso la gestión por objetivos en 1954).</div></div>' +
+    '<div class="lcards">' + letters + '</div><div class="tbw"><table class="tb"><tr><th></th><th>Significado</th><th>Pregunta clave</th><th>Ejemplo fintech</th></tr>' + rows + "</table></div>" +
+    '<div style="margin-top:14px">' + lessons + "</div>" +
+    '<div class="acts"><button class="btn" data-act="closeModal">Cerrar</button></div>');
+}
+
+/* ---------- Ajustes ---------- */
+function settingsModal() {
+  openModal("<h2>⚙️ Ajustes</h2><div class='col'>" +
+    '<div class="tgl"><span>🎵 Música</span><button class="sw' + (Snd.st.music ? " on" : "") + '" data-act="tglMusic" aria-label="Música"></button></div>' +
+    '<div class="tgl"><span>🔊 Efectos de sonido</span><button class="sw' + (Snd.st.sfx ? " on" : "") + '" data-act="tglSfx" aria-label="Efectos"></button></div>' +
+    '<div class="tgl"><span>🧑‍🏫 Modo docente<br><small class="muted">Desbloquea los 300 niveles</small></span><button class="sw' + (S.teacher ? " on" : "") + '" data-act="tglTeacher" aria-label="Modo docente"></button></div>' +
+    '<div class="card" style="padding:12px"><b>Código de partida</b><p class="muted" style="margin:4px 0 8px;font-size:14px">Copia este código para llevar tu avance a otro dispositivo, o pega uno para cargarlo.</p>' +
+    '<textarea class="code" id="code" aria-label="Código de partida"></textarea><div class="row" style="margin-top:8px"><button class="btn small ghost" data-act="exp">Generar y copiar</button><button class="btn small ghost" data-act="imp">Cargar código</button></div></div>' +
+    '<button class="btn ghost small" data-act="reset">🗑️ Borrar mi progreso</button></div>' +
+    '<div class="acts"><button class="btn" data-act="closeModal">Listo</button></div>');
+}
+function makeCode() { return "SQ1." + btoa(unescape(encodeURIComponent(JSON.stringify({ name: S.name, stars: S.stars })))); }
+function readCode(txt) {
+  txt = (txt || "").trim();
+  if (txt.indexOf("SQ1.") !== 0) throw new Error("formato");
+  const o = JSON.parse(decodeURIComponent(escape(atob(txt.slice(4)))));
+  const stars = {};
+  for (const k in o.stars) { const n = +k, v = +o.stars[k]; if (n >= 1 && n <= MAXLV && v >= 0 && v <= 3) stars[n] = v; }
+  return { name: String(o.name || "").slice(0, 18), stars };
+}
+
+/* ---------- Diploma final ---------- */
+function finalModal() {
+  Snd.sfx.win();
+  openModal("<h2>🏆 ¡Maestro SMART!</h2><p class='sub'>" + (S.name ? esc(S.name) + ", completaste" : "Completaste") + " los 300 niveles.</p>" +
+    '<div class="zafi">' + ZAFI + '<div class="bubble">Ya sabes que un deseo se vuelve meta con número y fecha, y que una meta SMART es <b>Específica, Medible, Alcanzable, Relevante y de Tiempo determinado</b>. Ahora crea la tuya.</div></div>' +
+    '<div class="sum"><div><b>' + totalStars() + '</b><small>estrellas de 900</small></div><div><b>300</b><small>niveles</small></div><div><b>12</b><small>mundos</small></div></div>' +
+    '<div class="tip">📝 <b>Tu tarea final:</b> escribe en tu cuaderno una meta SMART real con: qué, indicador, línea base, valor meta, por qué es alcanzable, fecha límite y cada cuánto la revisas.</div>' +
+    '<div class="acts"><button class="btn" data-act="worlds">🗺️ Volver al mapa</button></div>');
+}
+
+"use strict";
+/* ============================================================
+   Interfaz · tablero de cristales
+   ============================================================ */
+let B = null;
+const UI = { busy: false, sel: null, drag: null, byId: {}, cells: [], iceEl: {}, hammer: false, shufUsed: false, extraUsed: false, idleT: null, iceTotal: 0 };
+const GCOL = ["#ff4d6d", "#3b9bff", "#2fd07a", "#ff9a1f", "#b36bff", "#ffffff"];
+
+function setPos(el, r, c) { el.style.setProperty("--r", r); el.style.setProperty("--c", c); }
+function mkGemEl(g, r, c) {
+  const d = document.createElement("div");
+  d.className = "gem gx g" + g.t + (g.sp ? " sp" + g.sp : "");
+  d.dataset.id = g.id;
+  setPos(d, r, c);
+  d.innerHTML = '<span class="sh"></span><b>' + (g.t === 5 ? "★" : SMARTLET[g.t]) + "</b>" + (g.sp === 1 ? '<i class="arr">↔</i>' : g.sp === 2 ? '<i class="arr">↕</i>' : g.sp === 3 ? '<i class="arr">✸</i>' : "");
+  return d;
+}
+const snapshot = () => ({ col: B.collected.slice(), score: B.score, ice: B.iceLeft, moves: B.moves });
+
+function startBoard(n) {
+  closeModal(true);
+  const cfg = levelConfig(n), info = lvInfo(n);
+  B = new Board(cfg);
+  cur = { s: "board", n, cfg, info };
+  setTheme(info.w); Snd.music(info.w, "play");
+  UI.busy = false; UI.sel = null; UI.drag = null; UI.hammer = false; UI.shufUsed = false; UI.extraUsed = false;
+  UI.iceTotal = cfg.ice.reduce((a, b) => a + b.h, 0);
+  setTop({ back: "exitBoard", title: (info.boss ? "Jefe · " : "Nivel ") + n + " · " + WORLDS[info.w].short });
+  render('<section><div class="hud"><div class="pill moves" id="pmv"><small>Jugadas</small><b id="mv">0</b></div><div class="pill"><small>Puntos</small><b id="sc">0</b></div></div>' +
+    '<div class="goals" id="goals"></div><div class="boardwrap"><div class="board" id="board" style="--n:' + cfg.size + '"><div id="icel"></div><div id="gl"></div><div class="fxl" id="fxl"></div></div></div>' +
+    '<div class="boost"><button class="btn small ghost" id="bHam" data-act="hammer">🔨 Martillo ×' + B.hammers + '</button><button class="btn small ghost" id="bShuf" data-act="shuf">🔀 Mezclar</button></div></section>');
+  buildBoardDOM();
+  hudFrom(snapshot());
+  idleReset();
+}
+
+function buildBoardDOM() {
+  const N = B.N, gl = $("#gl"), ice = $("#icel");
+  UI.cells = []; UI.byId = {}; UI.iceEl = {};
+  for (let r = 0; r < N; r++) {
+    UI.cells.push([]);
+    for (let c = 0; c < N; c++) {
+      const g = B.grid[r][c], el = mkGemEl(g, r, c);
+      gl.appendChild(el); UI.byId[g.id] = el; UI.cells[r].push(el);
+    }
+  }
+  B.cfg.ice.forEach(i => {
+    const d = document.createElement("div");
+    d.className = "ice" + (i.h > 1 ? " h2" : "");
+    setPos(d, i.r, i.c); ice.appendChild(d); UI.iceEl[i.r * N + i.c] = d;
+  });
+  const bd = $("#board");
+  bd.onpointerdown = onDown; bd.onpointermove = onMove; bd.onpointerup = onUp; bd.onpointercancel = onUp;
+}
+
+function hudFrom(s) {
+  const mv = $("#mv"); if (!mv) return;
+  mv.textContent = s.moves; $("#pmv").classList.toggle("low", s.moves <= 5);
+  $("#sc").textContent = s.score;
+  const cfg = B.cfg; let h = "";
+  cfg.goals.forEach(g => { const have = Math.min(g.n, s.col[g.t]); h += '<div class="goal' + (have >= g.n ? " ok" : "") + '">' + gi(g.t) + " " + have + "/" + g.n + "</div>"; });
+  if (UI.iceTotal) { const left = Math.max(0, s.ice); h += '<div class="goal' + (left <= 0 ? " ok" : "") + '">❄️ ' + (UI.iceTotal - left) + "/" + UI.iceTotal + "</div>"; }
+  if (cfg.score) h += '<div class="goal' + (s.score >= cfg.score ? " ok" : "") + '">⭐ ' + Math.min(s.score, cfg.score) + "/" + cfg.score + "</div>";
+  $("#goals").innerHTML = h;
+  const hb = $("#bHam"); if (hb) { hb.textContent = "🔨 Martillo ×" + B.hammers; hb.classList.toggle("on", UI.hammer); }
+}
+
+/* ---------- entrada ---------- */
+function cellFromEvent(e) {
+  const rc = $("#board").getBoundingClientRect(), cell = rc.width / B.N;
+  const c = Math.floor((e.clientX - rc.left) / cell), r = Math.floor((e.clientY - rc.top) / cell);
+  return r < 0 || c < 0 || r >= B.N || c >= B.N ? null : [r, c];
+}
+function clearSel() { if (UI.sel) { const e = UI.cells[UI.sel[0]] && UI.cells[UI.sel[0]][UI.sel[1]]; if (e) e.classList.remove("sel"); UI.sel = null; } }
+function onDown(e) {
+  if (UI.busy || !B) return;
+  Snd.unlock();
+  const p = cellFromEvent(e); if (!p) return;
+  idleReset();
+  if (UI.hammer) { doHammer(p[0], p[1]); return; }
+  if (UI.sel) {
+    const sr = UI.sel[0], sc = UI.sel[1];
+    if (Math.abs(sr - p[0]) + Math.abs(sc - p[1]) === 1) { attemptSwap(sr, sc, p[0], p[1]); return; }
+    if (sr === p[0] && sc === p[1]) { clearSel(); return; }
+    clearSel();
+  }
+  UI.sel = p; UI.cells[p[0]][p[1]].classList.add("sel"); Snd.sfx.select();
+  UI.drag = { x: e.clientX, y: e.clientY, r: p[0], c: p[1] };
+  try { $("#board").setPointerCapture(e.pointerId); } catch (_) { }
+}
+function onMove(e) {
+  const d = UI.drag; if (!d || UI.busy || !B) return;
+  const dx = e.clientX - d.x, dy = e.clientY - d.y, th = ($("#board").getBoundingClientRect().width / B.N) * 0.4;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < th) return;
+  UI.drag = null;
+  let r2 = d.r, c2 = d.c;
+  if (Math.abs(dx) > Math.abs(dy)) c2 += dx > 0 ? 1 : -1; else r2 += dy > 0 ? 1 : -1;
+  if (r2 < 0 || c2 < 0 || r2 >= B.N || c2 >= B.N) return;
+  attemptSwap(d.r, d.c, r2, c2);
+}
+function onUp() { UI.drag = null; }
+
+/* ---------- jugadas ---------- */
+async function attemptSwap(r1, c1, r2, c2) {
+  if (UI.busy || !B) return;
+  clearSel(); idleReset();
+  const e1 = UI.cells[r1][c1], e2 = UI.cells[r2][c2], snap = snapshot();
+  UI.busy = true;
+  const res = B.trySwap(r1, c1, r2, c2);
+  if (!res.ok) {
+    setPos(e1, r2, c2); setPos(e2, r1, c1); Snd.sfx.swap();
+    await sleep(170);
+    setPos(e1, r1, c1); setPos(e2, r2, c2);
+    await sleep(190);
+    e1.classList.add("shake"); e2.classList.add("shake"); Snd.sfx.bad();
+    setTimeout(() => { e1.classList.remove("shake"); e2.classList.remove("shake"); }, 300);
+    UI.busy = false; idleReset(); return;
+  }
+  setPos(e1, r2, c2); setPos(e2, r1, c1); Snd.sfx.swap();
+  snap.moves = B.moves; hudFrom(snap);
+  await sleep(200);
+  await playRounds(res.rounds, snap);
+  if (res.shuffled) await playShuffle(res.shuffled);
+  resync(); hudFrom(snapshot());
+  UI.busy = false;
+  afterMove();
+}
+
+async function doHammer(r, c) {
+  if (B.hammers <= 0) { toast("No quedan martillos"); return; }
+  UI.hammer = false; $("#board").classList.remove("hammer");
+  UI.busy = true;
+  const snap = snapshot();
+  const res = B.useHammer(r, c);
+  if (!res.ok) { UI.busy = false; return; }
+  Snd.sfx.boom();
+  await playRounds(res.rounds, snap);
+  if (res.shuffled) await playShuffle(res.shuffled);
+  resync(); hudFrom(snapshot());
+  UI.busy = false;
+  afterMove();
+}
+
+async function playRounds(rounds, snap) {
+  const gl = $("#gl");
+  for (const rd of rounds) {
+    if (rd.fx.length) rd.fx.forEach(fxAdd); else Snd.sfx.match(rd.combo);
+    if (rd.spawned.length) setTimeout(() => Snd.sfx.special(), 120);
+    const many = rd.cleared.length > 14;
+    rd.cleared.forEach(c => {
+      const el = UI.byId[c.id];
+      if (el) { el.classList.add("pop"); if (!many || Math.random() < 0.4) burst(c.r, c.c, c.t); }
+    });
+    rd.iceHits.forEach(hitIce);
+    floatPts(rd);
+    await sleep(240);
+    rd.cleared.forEach(c => { const el = UI.byId[c.id]; if (el) { el.remove(); delete UI.byId[c.id]; } });
+    rd.spawned.forEach(s => { const el = mkGemEl(s, s.r, s.c); el.classList.add("spawn"); gl.appendChild(el); UI.byId[s.id] = el; });
+    rd.moved.forEach(m => { const el = UI.byId[m.id]; if (el) setPos(el, m.r, m.c); });
+    rd.created.forEach(m => { const el = mkGemEl(m, m.from, m.c); gl.appendChild(el); UI.byId[m.id] = el; });
+    void gl.offsetWidth;
+    rd.created.forEach(m => setPos(UI.byId[m.id], m.r, m.c));
+    rd.cleared.forEach(c => { if (c.t < 5) snap.col[c.t]++; });
+    snap.score = rd.score; snap.ice -= rd.iceHits.length; hudFrom(snap);
+    await sleep(270);
+  }
+}
+
+function resync() {
+  const N = B.N, keep = new Set(), gl = $("#gl");
+  const cells = [];
+  for (let r = 0; r < N; r++) {
+    cells.push([]);
+    for (let c = 0; c < N; c++) {
+      const g = B.grid[r][c];
+      let el = UI.byId[g.id];
+      if (!el) { el = mkGemEl(g, r, c); gl.appendChild(el); UI.byId[g.id] = el; }
+      setPos(el, r, c); keep.add(String(g.id)); cells[r].push(el);
+    }
+  }
+  UI.cells = cells;
+  Array.prototype.slice.call(gl.children).forEach(ch => { if (!keep.has(ch.dataset.id)) { delete UI.byId[ch.dataset.id]; ch.remove(); } });
+}
+async function playShuffle(list) {
+  Snd.sfx.shuffle(); banner("¡Mezclando cristales!");
+  list.forEach(x => { const el = UI.byId[x.id]; if (el) setPos(el, x.r, x.c); });
+  await sleep(480);
+}
+
+/* ---------- efectos ---------- */
+function fxAdd(f) {
+  const fxl = $("#fxl"); if (!fxl) return;
+  const d = document.createElement("div");
+  if (f.kind === "row") { d.className = "beam h"; Snd.sfx.zap(); }
+  else if (f.kind === "col") { d.className = "beam v"; Snd.sfx.zap(); }
+  else if (f.kind === "bomb") { d.className = "ring"; Snd.sfx.boom(); }
+  else { d.className = "flash"; Snd.sfx.rainbow(); }
+  setPos(d, f.r, f.c); fxl.appendChild(d);
+  setTimeout(() => d.remove(), 650);
+}
+function burst(r, c, t) {
+  const fxl = $("#fxl"); if (!fxl) return;
+  const cell = $("#board").getBoundingClientRect().width / B.N;
+  for (let i = 0; i < 4; i++) {
+    const p = document.createElement("div"); p.className = "pt";
+    setPos(p, r, c);
+    p.style.setProperty("--pc", GCOL[t] || "#fff");
+    p.style.setProperty("--dx", ((Math.random() - 0.5) * cell * 1.8).toFixed(0) + "px");
+    p.style.setProperty("--dy", ((Math.random() - 0.5) * cell * 1.8).toFixed(0) + "px");
+    fxl.appendChild(p); setTimeout(() => p.remove(), 560);
+  }
+}
+function floatPts(rd) {
+  const fxl = $("#fxl"); if (!fxl || !rd.cleared.length) return;
+  const m = rd.cleared[Math.floor(rd.cleared.length / 2)];
+  const d = document.createElement("div"); d.className = "pts"; d.textContent = "+" + rd.gain;
+  setPos(d, Math.max(0, Math.min(B.N - 1, m.r - 0.2)), Math.max(0, Math.min(B.N - 2, m.c)));
+  fxl.appendChild(d); setTimeout(() => d.remove(), 850);
+}
+function hitIce(h) {
+  const d = UI.iceEl[h.r * B.N + h.c]; if (!d) return;
+  Snd.sfx.ice();
+  if (h.left <= 0) { d.classList.add("brk"); setTimeout(() => d.remove(), 360); delete UI.iceEl[h.r * B.N + h.c]; }
+  else d.classList.remove("h2");
+}
+function banner(text) {
+  const bd = $("#board") || $("#tdf"); if (!bd) return;
+  const b = document.createElement("div"); b.className = "banner";
+  b.innerHTML = "<span>" + esc(text) + "</span>"; bd.appendChild(b);
+  setTimeout(() => b.remove(), 1500);
+}
+
+/* ---------- ayudas ---------- */
+function idleReset() {
+  clearTimeout(UI.idleT);
+  document.querySelectorAll(".gem.hintp").forEach(e => e.classList.remove("hintp"));
+  if (cur.s === "board") UI.idleT = setTimeout(idleHint, 7000);
+}
+function idleHint() {
+  if (cur.s !== "board" || !B) return;
+  if (UI.busy || modalOpen()) { idleReset(); return; }
+  const m = B.listMoves(); if (!m.length) return;
+  const mv = m[Math.floor(Math.random() * m.length)];
+  [UI.cells[mv[0]][mv[1]], UI.cells[mv[2]][mv[3]]].forEach(e => e && e.classList.add("hintp"));
+}
+function toggleHammer() {
+  if (UI.busy || !B) return;
+  if (B.hammers <= 0) { toast("Ya usaste el martillo"); return; }
+  UI.hammer = !UI.hammer;
+  $("#board").classList.toggle("hammer", UI.hammer);
+  $("#bHam").classList.toggle("on", UI.hammer);
+  if (UI.hammer) toast("Toca el cristal que quieres romper");
+}
+async function doShuffle() {
+  if (UI.busy || !B) return;
+  if (UI.shufUsed) { toast("Solo puedes mezclar una vez por nivel"); return; }
+  UI.shufUsed = true; UI.busy = true; clearSel();
+  const list = B.shuffleBoard();
+  await playShuffle(list);
+  resync(); UI.busy = false;
+}
+
+/* ---------- fin del tablero ---------- */
+function afterMove() {
+  idleReset();
+  if (B.progress().done) boardWin();
+  else if (B.moves <= 0) boardLose();
+}
+async function boardWin() {
+  UI.busy = true; clearTimeout(UI.idleT);
+  Snd.sfx.win(); banner("¡Cristales completados!");
+  await sleep(1400);
+  const hints = 1 + Math.min(3, Math.floor(B.totalCleared / 20));
+  openModal("<h2>💎 ¡Cristales completados!</h2><p class='sub'>Lo lograste con " + B.moves + " jugadas de sobra.</p>" +
+    '<div class="sum"><div><b>' + B.score + '</b><small>puntos</small></div><div><b>' + B.totalCleared + '</b><small>cristales</small></div><div><b>💡 ' + hints + '</b><small>pistas ganadas</small></div></div>' +
+    '<div class="zafi">' + ZAFI + '<div class="bubble">¡Ahora viene el <b>reto SMART</b>! Usa tus pistas con cuidado.</div></div>' +
+    '<div class="acts"><button class="btn green" data-act="toChallenge">¡Al reto SMART! ▶</button></div>', { dismiss: false });
+}
+function boardLose() {
+  UI.busy = true; clearTimeout(UI.idleT);
+  Snd.sfx.lose();
+  openModal("<h2>😮 ¡Se acabaron las jugadas!</h2><p class='sub'>Estuviste cerca. ¡Inténtalo otra vez!</p><div class='acts'>" +
+    (UI.extraUsed ? "" : '<button class="btn green" data-act="extra">➕ 5 jugadas extra (una vez)</button>') +
+    '<button class="btn" data-act="retry">🔁 Reintentar</button><button class="btn ghost" data-act="exitToLevels">🗺️ Volver al mapa</button></div>', { dismiss: false });
+}
+
+"use strict";
+/* ============================================================
+   Interfaz · Defensa SMART (mundos 9 a 12)
+   ============================================================ */
+let G = null;
+const TU = { timer: null, last: 0, sel: 0, els: {}, msgT: null, fx: 0 };
+const CARD_H = TD_HMAX;
+
+function tdIntro(n) {
+  const cfg = tdConfig(n), info = cfg.info, W = WORLDS[info.w];
+  const tut = !S.seen.td ? '<div class="tip">👆 <b>Cómo jugar:</b> lee la meta que baja y piensa <b>qué letra le falta</b>. Toca esa letra para disparar tu torre. Si quieres, toca primero una meta para elegirla. La lupa 🔍 te muestra sus piezas.</div>' : "";
+  const rows = ['<div class="goal" style="font-size:16px;border-radius:14px">🔧 Convierte <b>' + cfg.needed + '</b> metas normales en SMART</div>'];
+  if (cfg.allies) rows.push('<div class="goal" style="font-size:16px;border-radius:14px">🛡️ Viajan <b>' + cfg.allies + '</b> metas que ya son SMART: ¡no les dispares!</div>');
+  else rows.push('<div class="goal" style="font-size:16px;border-radius:14px">❤️ Tienes <b>' + cfg.hearts + '</b> corazones</div>');
+  if (info.boss) rows.push('<div class="goal" style="font-size:16px;border-radius:14px">' + W.bossEmoji + ' Llega el jefe: necesita <b>las 5 letras</b></div>');
+  openModal("<h2>" + (info.boss ? W.bossEmoji + " Jefe: " + W.boss : "🏯 Defensa · Nivel " + n) + '</h2><p class="sub">' + W.name + (info.boss ? " · Nivel " + n : "") + "</p>" +
+    '<div class="col">' + rows.join("") + "</div>" + tut +
+    '<div class="acts"><button class="btn" data-act="tdStart" data-n="' + n + '">¡A defender! ▶</button><button class="btn ghost small" data-act="lesson" data-w="' + info.w + '">📖 Repasar la lección</button></div>');
+}
+
+function tdStop() { if (TU.timer) { clearInterval(TU.timer); TU.timer = null; } clearTimeout(TU.msgT); }
+
+function startTD(n) {
+  closeModal(true); tdStop();
+  const cfg = tdConfig(n), info = cfg.info;
+  G = new TD(cfg);
+  cur = { s: "td", n, info };
+  TU.sel = 0; TU.els = {}; TU.last = Date.now();
+  setTheme(info.w); Snd.music(info.w, "play");
+  setTop({ back: "exitTD", title: (info.boss ? "Jefe · " : "Nivel ") + n + " · " + WORLDS[info.w].short });
+  const btns = LK.map(k => '<button class="tdt" data-act="tdFire" data-l="' + k + '" style="--c:' + LET[k].color + '" aria-label="Disparar ' + LET[k].name + '"><b>' + k + "</b><small>" + LET[k].name + "</small></button>").join("");
+  render('<section class="tdw"><div class="tdhud"><div class="tdhearts" id="tdh"></div><div class="tdprog" id="tdp"></div><div class="ener" title="Energía"><span>⚡</span><div class="bar"><i id="tde"></i></div></div></div>' +
+    '<div class="tdmsg" id="tdmsg"></div><div class="tdf" id="tdf"><div class="tdfx" id="tdfx"></div><div class="tdbase"><span>🏰 BASE</span></div></div>' +
+    '<div class="tdbar">' + btns + '</div>' +
+    '<div class="boost"><button class="btn small ghost" data-act="tdPause">⏸ Pausa</button><button class="btn small ghost" id="tdl" data-act="tdLupa">🔍 Lupa ×' + cfg.lupas + "</button></div></section>");
+  // separación entre tarjetas según la altura real del campo
+  const f = $("#tdf"), H = f ? f.clientHeight : 0;
+  if (H > CARD_H + 60) G.travel = H - CARD_H - 22;
+  tdHud();
+  TU.timer = setInterval(() => tdTick(), 50);
+}
+
+/* ---------- bucle ---------- */
+function tdTick(dtForce) {
+  if (!G || cur.s !== "td") { tdStop(); return; }
+  const now = Date.now();
+  let dt = dtForce !== undefined ? dtForce : (now - TU.last) / 1000;
+  TU.last = now;
+  if (MODAL || document.hidden) return;
+  dt = Math.min(dt, 0.12);
+  if (dt <= 0) return;
+  G.step(dt);
+  G.drain().forEach(tdEvent);
+  tdPos(); tdHud();
+}
+
+function tdCard(en) {
+  const sp = en.spec, d = document.createElement("div");
+  d.className = "en" + (sp.kind === "boss" ? " boss" : "") + (sp.elite ? " elite" : "");
+  d.dataset.id = en.id; d.dataset.act = "tdSel"; d.style.height = sp.h + "px";
+  d.innerHTML = (sp.kind === "boss" ? '<div class="bn">' + WORLDS[cur.info.w].bossEmoji + " " + WORLDS[cur.info.w].boss + "</div>" : "") +
+    '<p class="et">' + esc(sp.text) + '</p><div class="eb"></div>';
+  return d;
+}
+function tdPos() {
+  const nx = !TU.sel || !G.find(TU.sel) ? G.closest() : null;
+  G.en.forEach(en => {
+    const el = TU.els[en.id]; if (!el) return;
+    el.style.setProperty("--y", en.y.toFixed(4));
+    const on = !!nx && nx.id === en.id;
+    if (el._nx !== on) { el._nx = on; el.classList.toggle("nx", on); }
+  });
+}
+function tdHud() {
+  const h = $("#tdh"); if (!h) return;
+  h.textContent = "❤️".repeat(G.hearts) + "🖤".repeat(G.cfg.hearts - G.hearts);
+  const done = G.st.conv + G.st.saved + G.st.allyHits + G.st.leaks;
+  $("#tdp").innerHTML = "<b>" + done + "</b>/" + G.total() + " metas";
+  $("#tde").style.width = Math.round(G.e / G.cfg.emax * 100) + "%";
+  document.querySelectorAll(".tdt").forEach(b => b.classList.toggle("dim", G.e < 1));
+  const l = $("#tdl"); if (l) { l.textContent = "🔍 Lupa ×" + G.lupas; l.classList.toggle("off", G.lupas <= 0); }
+}
+function tdMsg(html, cls, ms) {
+  const m = $("#tdmsg"); if (!m) return;
+  m.className = "tdmsg on " + (cls || ""); m.innerHTML = html;
+  clearTimeout(TU.msgT); TU.msgT = setTimeout(() => { const mm = $("#tdmsg"); if (mm) { mm.className = "tdmsg"; mm.innerHTML = ""; } }, ms || 4800);
+}
+function tdFx(cls, html, left, topY) {
+  const fx = $("#tdfx"); if (!fx) return;
+  const d = document.createElement("div"); d.className = "fxp " + cls; d.innerHTML = html;
+  if (left !== undefined) d.style.left = left; if (topY !== undefined) d.style.top = topY;
+  fx.appendChild(d); setTimeout(() => d.remove(), 900);
+}
+function tdRemove(id, cls, ms) {
+  const el = TU.els[id]; if (!el) return;
+  delete TU.els[id];
+  if (TU.sel === id) TU.sel = 0;
+  el.classList.add(cls);
+  setTimeout(() => el.remove(), ms || 700);
+}
+function tdShot(L, en) {
+  const i = LK.indexOf(L), fx = $("#tdfx"); if (!fx || !en) return;
+  const p = document.createElement("div");
+  p.className = "proj"; p.textContent = L;
+  p.style.setProperty("--sx", (10 + i * 20) + "%"); p.style.setProperty("--c", LET[L].color);
+  p.style.setProperty("--ey", "calc(" + en.y.toFixed(3) + " * (100% - " + (CARD_H + 22) + "px) + " + (CARD_H / 2) + "px)");
+  fx.appendChild(p); setTimeout(() => p.remove(), 380);
+}
+
+function tdEvent(ev) {
+  const en = G.find(ev.id) || null;
+  switch (ev.t) {
+    case "spawn": {
+      const e = G.find(ev.id), el = tdCard(e);
+      $("#tdf").appendChild(el); TU.els[ev.id] = el; el.style.setProperty("--y", "0");
+      if (e.spec.kind === "boss") { Snd.sfx.unlock(); banner(WORLDS[cur.info.w].bossEmoji + " ¡Llega " + WORLDS[cur.info.w].boss + "!"); }
+      break;
+    }
+    case "hit": {
+      const el = TU.els[ev.id];
+      if (el) {
+        const b = document.createElement("span"); b.className = "bd"; b.style.setProperty("--c", LET[ev.L].color); b.textContent = ev.L;
+        $(".eb", el).appendChild(b);
+        el.classList.add("hit"); setTimeout(() => el.classList.remove("hit"), 260);
+      }
+      tdShot(ev.L, G.find(ev.id) || { y: 0.5 });
+      Snd.sfx.letter();
+      break;
+    }
+    case "conv": {
+      const el = TU.els[ev.id];
+      if (el) { const t = $(".et", el); }
+      Snd.sfx.ok();
+      tdMsg("✅ <b>¡Ahora es SMART!</b> Ya tiene las 5 letras.", "ok", 2400);
+      if (ev.boss) { Snd.sfx.boom(); banner("¡Jefe convertido!"); }
+      tdRemove(ev.id, "conv", 800);
+      break;
+    }
+    case "wrong": {
+      const el = TU.els[ev.id];
+      if (el) { el.classList.add("shk"); setTimeout(() => el.classList.remove("shk"), 420); }
+      tdShot(ev.L, G.find(ev.id) || { y: 0.5 });
+      Snd.sfx.bad();
+      tdMsg("❌ <b>Letra equivocada.</b> " + esc(ev.why), "bad", 6200);
+      break;
+    }
+    case "allyhit": {
+      Snd.sfx.no();
+      tdMsg("💔 <b>¡Esa meta ya era SMART!</b> Tenía las 5 letras. Las metas SMART se dejan pasar.", "bad", 6200);
+      tdRemove(ev.id, "gone", 600);
+      break;
+    }
+    case "leak": {
+      Snd.sfx.no();
+      const el = TU.els[ev.id];
+      const sp = cfgSpec(ev.id);
+      const miss = sp ? sp.need.map(k => k + " (" + LET[k].name + ")").join(", ") : "";
+      tdMsg("💥 <b>¡Una meta normal llegó a la base!</b> Le faltaba: " + esc(miss) + ".", "bad", 6500);
+      tdRemove(ev.id, "gone", 500);
+      break;
+    }
+    case "saved": {
+      Snd.sfx.star(0);
+      tdMsg("🛡️ <b>¡Meta SMART a salvo!</b> +2 de energía ⚡", "ok", 2600);
+      tdRemove(ev.id, "conv", 700);
+      break;
+    }
+    case "noenergy": tdMsg("⚡ Sin energía. ¡Espera un momento!", "bad", 1600); Snd.sfx.bad(); break;
+    case "over": tdOver(ev.r); break;
+  }
+}
+function cfgSpec(id) { return G.cfg.seq.find(s => s.id === id) || null; }
+
+/* ---------- acciones ---------- */
+function tdFire(L) {
+  if (!G || G.over || MODAL) return;
+  let id = TU.sel && G.find(TU.sel) ? TU.sel : 0;
+  if (!G.closest()) return;
+  G.fire(L, id || undefined);
+  G.drain().forEach(tdEvent);
+  tdPos(); tdHud();
+}
+function tdSel(id) {
+  if (!G || G.over || MODAL) return;
+  TU.sel = TU.sel === id ? 0 : id;
+  document.querySelectorAll(".en").forEach(e => e.classList.toggle("sel", +e.dataset.id === TU.sel));
+  Snd.sfx.select();
+}
+function tdLupa() {
+  if (!G || G.over || MODAL) return;
+  if (G.lupas <= 0) { toast("🔍 Ya no te quedan lupas"); Snd.sfx.bad(); return; }
+  const x = (TU.sel && G.find(TU.sel)) || G.closest();
+  if (!x) { toast("Todavía no hay metas en pantalla"); return; }
+  G.lupas--; tdHud(); Snd.sfx.hint();
+  const sp = x.spec;
+  const chips = tdLupaChips(x).map(c => {
+    const L = LET[c.k];
+    return '<div class="chip ' + c.st + '" style="--c:' + L.color + '"><b>' + c.k + "</b><span>" + esc(c.t) + "</span></div>";
+  }).join("");
+  const verdict = sp.kind === "ally" ? "🛡️ ¡Ya es una meta SMART! No le dispares." : sp.vk === "vague" ? "Es solo un deseo: necesita las 5 letras." : "Todavía no es SMART: dispara las letras que faltan.";
+  openModal("<h2>🔍 Lupa</h2>" + stmtHTML(sp.text) + '<div class="bk">' + chips + '</div><div class="fact">' + verdict + '</div><div class="acts"><button class="btn" data-act="closeModal">Seguir jugando ▶</button></div>');
+}
+const stmtHTML = t => '<div class="stmt">' + esc(t) + "</div>";
+function tdPause() {
+  if (!G || G.over || MODAL) return;
+  openModal('<h2>⏸ Pausa</h2><p class="sub">El juego espera por ti.</p><div class="acts"><button class="btn green" data-act="closeModal">Seguir ▶</button><button class="btn ghost small" data-act="exitTDnow">🗺️ Salir al mapa</button></div>', { dismiss: false });
+}
+
+/* ---------- fin ---------- */
+function tdOver(r) {
+  tdStop();
+  const n = G.cfg.n, info = G.cfg.info, W = WORLDS[info.w];
+  setTimeout(() => {
+    if (r === "lose") {
+      Snd.sfx.lose();
+      openModal("<h2>😮 ¡La base cayó!</h2><p class='sub'>Se colaron demasiadas metas. ¡Inténtalo otra vez!</p>" +
+        '<div class="fact">Recuerda: lee la meta, busca <b>qué letra le falta</b> y no le dispares a las que ya son SMART.</div>' +
+        '<div class="acts"><button class="btn" data-act="retry" data-n="' + n + '">🔁 Reintentar</button><button class="btn ghost" data-act="exitToLevels">🗺️ Volver al mapa</button></div>', { dismiss: false });
+      return;
+    }
+    const stars = G.stars(), prev = starsOf(n);
+    S.stars[n] = Math.max(prev, stars); save();
+    const first = prev === 0;
+    let extra = "";
+    if (info.boss && first && n < MAXLV) extra = '<div class="fact">🎉 ¡Derrotaste a ' + W.boss + " y desbloqueaste <b>" + WORLDS[info.w + 1].name + "</b>!</div>";
+    Snd.sfx.win();
+    const last = n === MAXLV;
+    openModal("<h2>" + (info.boss ? W.bossEmoji + " ¡Jefe derrotado!" : "¡Defensa lograda!") + '</h2><p class="sub">' + levelTitle(n) + "</p>" +
+      '<div class="starsbig"><span>★</span><span>★</span><span>★</span></div>' +
+      '<div class="sum"><div><b>' + G.st.conv + '</b><small>metas convertidas</small></div><div><b>' + G.st.saved + '</b><small>SMART a salvo</small></div><div><b>' + G.lost + '</b><small>corazones perdidos</small></div></div>' +
+      (stars < 3 ? '<p class="muted" style="text-align:center;margin:0;font-size:14px">3 ⭐ = máximo 1 corazón perdido y máximo 2 disparos equivocados.</p>' : "") +
+      extra + '<div class="fact">' + FACTS[n % FACTS.length] + "</div>" +
+      '<div class="acts">' + (last ? '<button class="btn green" data-act="final">🏆 Ver mi diploma</button>' : '<button class="btn green" data-act="openNext" data-n="' + (n + 1) + '">' + (info.boss ? "Siguiente mundo ▶" : "Siguiente nivel ▶") + "</button>") +
+      '<div class="row"><button class="btn ghost small" data-act="retry" data-n="' + n + '">🔁 Repetir</button><button class="btn ghost small" data-act="exitToLevels">🗺️ Mapa</button></div></div>', { dismiss: false });
+    for (let i = 0; i < stars; i++) setTimeout(() => {
+      const el = document.querySelectorAll(".starsbig span")[i]; if (el) { el.classList.add("on"); Snd.sfx.star(i); }
+    }, 350 + i * 420);
+    if (info.boss && first && n < MAXLV) setTimeout(() => Snd.sfx.unlock(), 1700);
+  }, 700);
+}
+
+"use strict";
+/* ============================================================
+   Interfaz · retos SMART, resultados, acciones y arranque
+   ============================================================ */
+let CH = null;
+const TYPE_LABEL = {
+  tf: "Verdadero o falso", classify: "Meta normal o SMART", findSmart: "Encuentra la meta SMART", missing: "Detective de metas",
+  whichLetter: "¿Qué letra es?", tap: "Toca la parte correcta", compare: "Compara dos metas", yesno: "Sí o no", taskres: "Tarea o resultado",
+  build: "Forja de metas", match: "Une las parejas", order: "Ordena los pasos", hangman: "Ahorcado SMART"
+};
+const PRAISE = ["¡Correcto!", "¡Muy bien!", "¡Excelente!", "¡Eso es!", "¡Genial!", "¡Bien pensado!"];
+const KEYS = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ".split("");
+const shuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
+
+function startChallenge(n) {
+  closeModal(true);
+  const info = lvInfo(n);
+  const earned = B ? 1 + Math.min(3, Math.floor(B.totalCleared / 20)) : 1;
+  CH = { n, info, qs: makeChallenge(n), i: 0, mistakes: 0, hints: earned, usedHints: 0, done: false, st: {}, movesLeft: B ? B.moves : 0, movesTotal: B ? B.cfg.moves : 1 };
+  cur = { s: "chal", n, info };
+  clearTimeout(UI.idleT);
+  setTheme(info.w); Snd.music(info.w, "think");
+  setTop({ back: "exitChal", title: (info.boss ? "Jefe · " : "Nivel ") + n + " · Reto SMART" });
+  renderQuestion();
+}
+
+function choiceHTML(q) {
+  const cls = "opts" + (q.row ? " r1" : "") + (q.grid ? " g2" : "");
+  return (q.stem || "") + '<div class="' + cls + '">' + q.opts.map(o => {
+    let inner;
+    if (o.color) { const p = o.label.split(" · "); inner = '<span class="ob">' + p[0] + "</span><span>" + esc(p[1]) + "</span>"; } else inner = esc(o.label);
+    return '<button class="opt' + (o.label.length > 60 ? " long" : "") + '" data-act="opt" data-id="' + esc(o.id) + '"' + (o.color ? ' style="--oc:' + o.color + '"' : "") + ">" + inner + "</button>";
+  }).join("") + "</div>";
+}
+function tapHTML(q) {
+  return '<div class="segs">' + q.segs.map((s, i) => '<button class="seg" data-act="seg" data-i="' + i + '">' + esc(s.t) + (i < q.segs.length - 1 ? "," : ".") + "</button>").join("") + "</div>";
+}
+function buildHTML(q) {
+  return '<div class="stmt">📝 Meta normal: «' + esc(q.vague.replace(/\.$/, "")) + '»</div><div class="preview" id="pv"></div><div class="col" id="slots">' +
+    q.slots.map(s => {
+      const L = LET[s.k];
+      return '<div class="slot' + (s.fixed ? " fixed" : "") + '" data-k="' + s.k + '" style="--c:' + L.color + '"><div class="sh2"><b>' + s.k + "</b><span>" + L.name + " · " + L.key + '</span></div><div class="ch">' +
+        (s.fixed ? '<div class="pc pick">' + esc(s.t) + "</div>" : s.opts.map((o, j) => '<button class="pc" data-act="pick" data-k="' + s.k + '" data-j="' + j + '">' + esc(o.t) + "</button>").join("")) + "</div></div>";
+    }).join("") + '</div><button class="btn green" id="forge" data-act="forge" disabled>⚒️ ¡Forjar meta!</button>';
+}
+function matchHTML(q) {
+  CH.st.sel = null; CH.st.done = 0;
+  const right = shuf(q.pairs.map((p, i) => i));
+  return '<div class="mgrid"><div class="col">' + q.pairs.map((p, i) => '<button class="mi" data-act="mi" data-side="l" data-i="' + i + '">' + esc(p[0]) + "</button>").join("") +
+    '</div><div class="col">' + right.map(j => '<button class="mi" data-act="mi" data-side="r" data-j="' + j + '">' + esc(q.pairs[j][1]) + "</button>").join("") + "</div></div>";
+}
+function orderHTML(q) {
+  CH.st.next = 0;
+  const idx = shuf(q.items.map((_, i) => i));
+  if (idx.every((v, i) => v === i)) idx.reverse();
+  return '<div class="ord">' + q.items.map((_, i) => '<div class="oslot" id="os' + i + '"><b>' + (i + 1) + "</b><span></span></div>").join("") + '</div><div class="opool">' +
+    idx.map(j => '<button class="pc" data-act="ord" data-j="' + j + '">' + esc(q.items[j]) + "</button>").join("") + "</div>";
+}
+function hmHTML() { CH.st.g = new Set(); CH.st.err = 0; return '<div id="hm"></div>'; }
+function hmDraw() {
+  const q = CH.q, s = CH.st, w = q.word.split("");
+  const el = $("#hm"); if (!el) return;
+  el.innerHTML = '<div class="hearts" aria-label="Vidas">' + "❤️".repeat(6 - s.err) + "🖤".repeat(s.err) + '</div><div class="word" style="margin:12px 0">' +
+    w.map(ch => "<span>" + (s.g.has(ch) || CH.done ? ch : "") + "</span>").join("") + '</div><div class="clue">💬 ' + esc(q.clue) + '</div><div class="kb" style="margin-top:12px">' +
+    KEYS.map(k => '<button class="key' + (s.g.has(k) ? (w.includes(k) ? " hit" : " miss") : "") + '" data-act="key" data-l="' + k + '">' + k + "</button>").join("") + "</div>";
+}
+
+function renderQuestion() {
+  const q = CH.qs[CH.i]; CH.q = q; CH.done = false; CH.st = {};
+  const W = WORLDS[CH.info.w];
+  const dots = CH.qs.map((_, i) => '<i class="' + (i < CH.i ? "on" : i === CH.i ? "cur" : "") + '"></i>').join("");
+  let body = "";
+  switch (q.kind) {
+    case "choice": body = choiceHTML(q); break;
+    case "tap": body = tapHTML(q); break;
+    case "build": CH.st.pick = {}; body = buildHTML(q); break;
+    case "match": body = matchHTML(q); break;
+    case "order": body = orderHTML(q); break;
+    case "hangman": body = hmHTML(); break;
+  }
+  render('<section class="chal"><div class="chead' + (CH.info.boss ? " boss" : "") + '" id="chead"><span class="mo">' + (CH.info.boss ? W.bossEmoji : W.emoji) + '</span><div class="mid"><div class="nm">' +
+    (CH.info.boss ? "Jefe: " + W.boss + " · " + (CH.i + 1) + "/" + CH.qs.length : "Pregunta " + (CH.i + 1) + " de " + CH.qs.length) + '</div><div class="dots">' + dots + "</div></div></div>" +
+    '<div class="card q"><div class="qtop"><span class="qtype">' + TYPE_LABEL[q.type] + '</span><button class="mini" data-act="speak" aria-label="Leer en voz alta">🔊</button></div><h2 class="prompt">' + esc(q.prompt) + "</h2>" + body + "</div>" +
+    '<div id="fb"></div><div class="chbar"><button class="btn ghost small" id="hintBtn" data-act="hint">💡 Pista ×' + CH.hints + "</button></div></section>");
+  if (q.kind === "build") updatePreview();
+  if (q.kind === "hangman") hmDraw();
+}
+
+/* ---------- comentarios ---------- */
+const isLast = () => CH.i + 1 >= CH.qs.length;
+function fbOk(msg, html) {
+  CH.done = true;
+  const hb = $("#hintBtn"); if (hb) hb.classList.add("hidden");
+  $("#fb").innerHTML = '<div class="fb ok fade"><h3>' + PRAISE[Math.floor(Math.random() * PRAISE.length)] + "</h3><p>" + esc(msg || "") + "</p>" + (html || "") +
+    '<button class="btn green" data-act="next">' + (isLast() ? "Terminar reto ▶" : "Siguiente ▶") + "</button></div>";
+  const f = $("#fb"); if (f && f.scrollIntoView) f.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function fbNo(msg) {
+  $("#fb").innerHTML = '<div class="fb no fade"><h3>Casi…</h3><p>' + esc(msg) + "</p></div>";
+  const f = $("#fb"); if (f && f.scrollIntoView) f.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function fbEnd(msg) {
+  CH.done = true;
+  const hb = $("#hintBtn"); if (hb) hb.classList.add("hidden");
+  $("#fb").innerHTML = '<div class="fb no fade"><h3>¡Casi!</h3><p>' + msg + '</p><button class="btn" data-act="next">' + (isLast() ? "Terminar reto ▶" : "Siguiente ▶") + "</button></div>";
+}
+
+/* ---------- respuestas ---------- */
+function answerChoice(el) {
+  if (CH.done) return;
+  const q = CH.q, id = el.dataset.id;
+  if (id === q.correct) {
+    el.classList.add("right");
+    document.querySelectorAll(".opt").forEach(o => { if (o !== el && !o.classList.contains("wrong")) o.classList.add("gone"); });
+    Snd.sfx.ok(); fbOk(q.explain, q.explainHTML);
+  } else {
+    el.classList.add("wrong"); CH.mistakes++; Snd.sfx.no();
+    fbNo((q.why && q.why[id]) || "Piénsalo otra vez. ¡Tú puedes!");
+  }
+}
+function answerSeg(el) {
+  if (CH.done) return;
+  const q = CH.q, i = +el.dataset.i, s = q.segs[i];
+  if (s.k === q.target) {
+    document.querySelectorAll(".seg").forEach((b, j) => {
+      const sg = q.segs[j];
+      if (sg.k) b.insertAdjacentHTML("afterbegin", '<span class="sl" style="--c:' + LET[sg.k].color + '">' + sg.k + "</span>");
+      if (j === i) b.classList.add("right");
+    });
+    Snd.sfx.ok(); fbOk(q.explain);
+  } else {
+    el.classList.add("wrong"); CH.mistakes++; Snd.sfx.no();
+    fbNo(s.k ? "Esa parte es la " + s.k + " (" + LET[s.k].name + "). Busca la que responde: " + LET[q.target].key : "Esa no es. ¡Sigue buscando!");
+    setTimeout(() => el.classList.remove("wrong"), 700);
+  }
+}
+function updatePreview() {
+  const q = CH.q, parts = q.slots.map(s => {
+    const L = LET[s.k];
+    if (s.fixed) return '<span class="pv" style="--c:' + L.color + '">' + esc(s.t) + "</span>";
+    const j = CH.st.pick[s.k];
+    return j === undefined ? '<span class="pe">…(' + s.k + ")…</span>" : '<span class="pv" style="--c:' + L.color + '">' + esc(s.opts[j].t) + "</span>";
+  });
+  const pv = $("#pv"); if (pv) pv.innerHTML = parts.join(", ") + ".";
+  const all = q.slots.every(s => s.fixed || CH.st.pick[s.k] !== undefined);
+  const fg = $("#forge"); if (fg) fg.disabled = !all || CH.done;
+}
+function pickChip(k, j) {
+  if (CH.done) return;
+  CH.st.pick[k] = j;
+  const slot = document.querySelector('.slot[data-k="' + k + '"]');
+  slot.classList.remove("bad");
+  slot.querySelectorAll(".pc").forEach((b, x) => b.classList.toggle("pick", x === j));
+  slot.style.setProperty("--c", LET[k].color);
+  Snd.sfx.select(); updatePreview();
+}
+function forge() {
+  if (CH.done) return;
+  const q = CH.q; let bad = 0;
+  q.slots.forEach(s => {
+    if (s.fixed) return;
+    const slot = document.querySelector('.slot[data-k="' + s.k + '"]');
+    const ok = s.opts[CH.st.pick[s.k]].ok;
+    slot.classList.toggle("bad", !ok); slot.classList.toggle("okk", !!ok);
+    if (!ok) bad++;
+  });
+  if (bad) { CH.mistakes++; Snd.sfx.no(); fbNo("Revisa las piezas marcadas en rojo. Pregúntate: " + q.slots.filter(s => !s.fixed && !s.opts[CH.st.pick[s.k]].ok).map(s => "«" + LET[s.k].key + "»").join(" · ")); }
+  else {
+    document.querySelectorAll("#slots .pc").forEach(b => { b.disabled = true; });
+    Snd.sfx.ok(); fbOk(q.explain + " Tu meta SMART quedó así: " + q.slots.map(s => s.fixed ? s.t : s.opts[CH.st.pick[s.k]].t).join(", ") + ".");
+  }
+}
+function matchClick(el) {
+  if (CH.done) return;
+  const q = CH.q;
+  if (el.dataset.side === "l") {
+    document.querySelectorAll('.mi[data-side="l"]').forEach(x => x.classList.remove("sel"));
+    CH.st.sel = el.dataset.i; el.classList.add("sel"); Snd.sfx.select(); return;
+  }
+  if (CH.st.sel === null || CH.st.sel === undefined) { toast("Primero toca una carta de la izquierda"); return; }
+  const i = CH.st.sel, left = document.querySelector('.mi[data-side="l"][data-i="' + i + '"]');
+  CH.st.sel = null; left.classList.remove("sel");
+  if (i === el.dataset.j) { markPair(left, el); }
+  else {
+    CH.mistakes++; Snd.sfx.no(); el.classList.add("wrong"); left.classList.add("wrong");
+    setTimeout(() => { el.classList.remove("wrong"); left.classList.remove("wrong"); }, 450);
+    fbNo("Esas dos no van juntas. ¡Prueba otra pareja!");
+  }
+}
+function markPair(left, right) {
+  left.classList.add("done"); right.classList.add("done"); CH.st.done++; Snd.sfx.match(CH.st.done);
+  $("#fb").innerHTML = "";
+  if (CH.st.done === CH.q.pairs.length) { Snd.sfx.ok(); fbOk(CH.q.explain); }
+}
+function orderPlace(j, btn) {
+  if (CH.done) return;
+  const q = CH.q;
+  if (j === CH.st.next) {
+    const slot = $("#os" + j);
+    slot.querySelector("span").textContent = q.items[j]; slot.classList.add("full");
+    btn.style.visibility = "hidden"; btn.disabled = true; CH.st.next++; Snd.sfx.match(CH.st.next);
+    $("#fb").innerHTML = "";
+    if (CH.st.next === q.items.length) { Snd.sfx.ok(); fbOk(q.explain); }
+  } else {
+    CH.mistakes++; Snd.sfx.no(); btn.classList.add("shk"); setTimeout(() => btn.classList.remove("shk"), 400);
+    fbNo("Ese paso no va ahora. ¿Qué pasa primero?");
+  }
+}
+function hmKey(l, fromHint) {
+  if (CH.done) return;
+  const q = CH.q, s = CH.st;
+  if (s.g.has(l)) return;
+  s.g.add(l);
+  if (q.word.includes(l)) {
+    Snd.sfx.letter();
+    if (q.word.split("").every(c => s.g.has(c))) { CH.done = true; hmDraw(); Snd.sfx.ok(); fbOk(q.explain + " ¡Sin perder todas las vidas!"); return; }
+  } else {
+    s.err++; Snd.sfx.no();
+    if (s.err >= 6) { CH.mistakes += 2; CH.done = true; hmDraw(); fbEnd("No pasa nada: la palabra era <b>" + q.word + "</b>. Ya la conoces para la próxima."); return; }
+  }
+  hmDraw();
+}
+
+/* ---------- pistas ---------- */
+function useHint() {
+  if (!CH || CH.done) return;
+  const q = CH.q;
+  if (CH.hints <= 0) { toast("No te quedan pistas. ¡Gana más recolectando cristales!"); return; }
+  let used = false;
+  if (q.kind === "choice") {
+    const c = Array.prototype.filter.call(document.querySelectorAll(".opt"), o => o.dataset.id !== q.correct && !o.classList.contains("gone") && !o.classList.contains("wrong"));
+    if (c.length) { c[Math.floor(Math.random() * c.length)].classList.add("gone"); used = true; } else toast("Solo queda la respuesta correcta");
+  } else if (q.kind === "tap") {
+    const el = document.querySelectorAll(".seg")[q.segs.findIndex(s => s.k === q.target)]; el.classList.add("pulse"); used = true;
+  } else if (q.kind === "build") {
+    const s = q.slots.find(x => !x.fixed && !(CH.st.pick[x.k] !== undefined && x.opts[CH.st.pick[x.k]].ok));
+    if (s) { pickChip(s.k, s.opts.findIndex(o => o.ok)); used = true; }
+  } else if (q.kind === "match") {
+    const left = Array.prototype.find.call(document.querySelectorAll('.mi[data-side="l"]'), b => !b.classList.contains("done"));
+    if (left) { const r = document.querySelector('.mi[data-side="r"][data-j="' + left.dataset.i + '"]'); left.classList.remove("sel"); CH.st.sel = null; markPair(left, r); used = true; }
+  } else if (q.kind === "order") {
+    const b = Array.prototype.find.call(document.querySelectorAll('#screen .opool .pc'), x => +x.dataset.j === CH.st.next);
+    if (b) { orderPlace(CH.st.next, b); used = true; }
+  } else if (q.kind === "hangman") {
+    const l = q.word.split("").find(c => !CH.st.g.has(c)); if (l) { hmKey(l, true); used = true; }
+  }
+  if (used) { CH.hints--; CH.usedHints++; Snd.sfx.hint(); const hb = $("#hintBtn"); if (hb) hb.textContent = "💡 Pista ×" + CH.hints; }
+}
+function speechText(q) {
+  const strip = h => String(h || "").replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+  let t = q.prompt + ". " + strip(q.stem);
+  if (q.kind === "choice") t += " " + q.opts.map((o, i) => (q.opts.length > 2 ? "Opción " + "ABCDE"[i] + ": " : "") + o.label.replace(" · ", ", ")).join(". ");
+  if (q.kind === "tap") t += " " + q.segs.map(s => s.t).join(", ");
+  if (q.kind === "hangman") t += " Pista: " + q.clue;
+  if (q.kind === "build") t += " Meta normal: " + q.vague;
+  return t;
+}
+
+/* ---------- resultado ---------- */
+function finishChallenge() {
+  const n = CH.n, info = CH.info, m = CH.mistakes;
+  let stars = 1; if (m <= 1) stars = 2; if (m === 0 && CH.movesLeft >= Math.ceil(CH.movesTotal * 0.15)) stars = 3;
+  const prev = starsOf(n);
+  S.stars[n] = Math.max(prev, stars); save();
+  const first = prev === 0, W = WORLDS[info.w];
+  let extra = "";
+  if (info.boss && first && n < MAXLV) { extra = '<div class="fact">🎉 ¡Derrotaste a ' + W.boss + " y desbloqueaste <b>" + WORLDS[info.w + 1].name + "</b>!</div>"; }
+  Snd.sfx.win();
+  const lastLevel = n === MAXLV;
+  openModal("<h2>" + (info.boss ? W.bossEmoji + " ¡Jefe derrotado!" : "¡Nivel completado!") + '</h2><p class="sub">' + levelTitle(n) + "</p>" +
+    '<div class="starsbig"><span>★</span><span>★</span><span>★</span></div>' +
+    '<div class="sum"><div><b>' + m + '</b><small>errores</small></div><div><b>' + CH.usedHints + '</b><small>pistas usadas</small></div><div><b>' + CH.movesLeft + '</b><small>jugadas sobrantes</small></div></div>' +
+    (stars < 3 ? '<p class="muted" style="text-align:center;margin:0;font-size:14px">' + (m > 0 ? "3 ⭐ = cero errores y jugadas de sobra." : "Para 3 ⭐ termina los cristales con más jugadas de sobra.") + "</p>" : "") +
+    extra + '<div class="fact">' + FACTS[n % FACTS.length] + "</div>" +
+    '<div class="acts">' + (lastLevel ? '<button class="btn green" data-act="final">🏆 Ver mi diploma</button>' : '<button class="btn green" data-act="openNext" data-n="' + (n + 1) + '">' + (info.boss ? "Siguiente mundo ▶" : "Siguiente nivel ▶") + "</button>") +
+    '<div class="row"><button class="btn ghost small" data-act="retry" data-n="' + n + '">🔁 Repetir</button><button class="btn ghost small" data-act="exitToLevels">🗺️ Mapa</button></div></div>', { dismiss: false });
+  for (let i = 0; i < stars; i++) setTimeout(() => {
+    const el = document.querySelectorAll(".starsbig span")[i]; if (el) { el.classList.add("on"); Snd.sfx.star(i); }
+  }, 350 + i * 420);
+  if (info.boss && first && n < MAXLV) setTimeout(() => Snd.sfx.unlock(), 1700);
+}
+
+/* ---------- acciones ---------- */
+function refreshToggles() {
+  document.querySelectorAll('[data-act="tglMusic"]').forEach(b => { if (b.classList.contains("sw")) b.classList.toggle("on", Snd.st.music); else b.classList.toggle("off", !Snd.st.music); });
+  document.querySelectorAll('[data-act="tglSfx"]').forEach(b => { if (b.classList.contains("sw")) b.classList.toggle("on", Snd.st.sfx); else b.classList.toggle("off", !Snd.st.sfx); });
+}
+const ACT = {
+  title() { screenTitle(); },
+  play() { openLevel(Math.min(MAXLV, maxDone() + 1)); },
+  worlds() { closeModal(true); screenWorlds(); },
+  openWorld(el) {
+    const w = +el.dataset.w;
+    if (w * 25 + 1 > unlockedMax()) { toast("🔒 Termina el mundo anterior para entrar"); Snd.sfx.bad(); return; }
+    screenLevels(w);
+  },
+  level(el) { const n = +el.dataset.n; if (n > unlockedMax()) return; openLevel(n); },
+  lesson(el) { lessonModal(+el.dataset.w); },
+  lessonNext() { LS.i++; drawLesson(); },
+  lessonPrev() { LS.i--; drawLesson(); },
+  lessonDone() { const a = LS.after; closeModal(true); if (a) a(); },
+  book() { bookModal(); },
+  settings() { settingsModal(); },
+  closeModal() { closeModal(); },
+  confirmYes() { const f = CONF; CONF = null; if (f) f(); },
+  saveName() {
+    const i = $("#nm"), v = i ? i.value.trim() : "";
+    if (v) S.name = v.slice(0, 18); else S.seen.skipName = 1;
+    save(); screenTitle();
+  },
+  tglMusic() { Snd.setMusic(!Snd.st.music); S.music = Snd.st.music; save(); refreshToggles(); },
+  tglSfx() { Snd.setSfx(!Snd.st.sfx); S.sfx = Snd.st.sfx; save(); refreshToggles(); },
+  tglTeacher(el) { S.teacher = !S.teacher; save(); el.classList.toggle("on", S.teacher); toast(S.teacher ? "Modo docente: todos los niveles abiertos" : "Modo docente desactivado"); },
+  exp() {
+    const c = makeCode(), t = $("#code"); t.value = c; t.select();
+    try { navigator.clipboard.writeText(c).then(() => toast("Código copiado"), () => toast("Copia el código del cuadro")); } catch (e) { toast("Copia el código del cuadro"); }
+  },
+  imp() {
+    try {
+      const o = readCode($("#code").value);
+      for (const k in o.stars) S.stars[k] = Math.max(S.stars[k] || 0, o.stars[k]);
+      if (o.name) S.name = o.name;
+      save(); toast("¡Partida cargada! ⭐ " + totalStars());
+    } catch (e) { toast("Ese código no es válido"); }
+  },
+  reset() { confirmModal("Se borrarán todas tus estrellas y niveles.", "Sí, borrar", () => { S.stars = {}; S.seen = {}; save(); closeModal(true); screenTitle(); toast("Progreso borrado"); }); },
+  startBoard(el) { startBoard(+el.dataset.n); },
+  toChallenge() { startChallenge(cur.n); },
+  retry(el) { const n = +(el.dataset.n || cur.n); if (lvInfo(n).w >= TD_FIRST) startTD(n); else startBoard(n); },
+  tdStart(el) { startTD(+el.dataset.n); },
+  tdFire(el) { tdFire(el.dataset.l); },
+  tdSel(el) { tdSel(+el.dataset.id); },
+  tdPause() { tdPause(); },
+  tdLupa() { tdLupa(); },
+  exitTD() { confirmModal("Perderás tu avance en este nivel.", "Salir", () => { tdStop(); closeModal(true); screenLevels(cur.info.w); }); },
+  exitTDnow() { tdStop(); closeModal(true); screenLevels(cur.info.w); },
+  extra() { B.moves += 5; UI.extraUsed = true; UI.busy = false; closeModal(true); hudFrom(snapshot()); idleReset(); toast("+5 jugadas ¡Vamos!"); },
+  exitBoard() { confirmModal("Perderás tu avance en este nivel.", "Salir", () => { closeModal(true); clearTimeout(UI.idleT); screenLevels(cur.info.w); }); },
+  exitChal() { confirmModal("Tendrás que repetir el nivel desde los cristales.", "Salir", () => { closeModal(true); screenLevels(cur.info.w); }); },
+  exitToLevels() { closeModal(true); screenLevels(cur.info ? cur.info.w : 0); },
+  openNext(el) { const n = +el.dataset.n; closeModal(true); screenLevels(lvInfo(n).w); openLevel(n); },
+  final() { closeModal(true); finalModal(); },
+  hammer() { toggleHammer(); },
+  shuf() { doShuffle(); },
+  opt(el) { answerChoice(el); },
+  seg(el) { answerSeg(el); },
+  pick(el) { pickChip(el.dataset.k, +el.dataset.j); },
+  forge() { forge(); },
+  mi(el) { matchClick(el); },
+  ord(el) { orderPlace(+el.dataset.j, el); },
+  key(el) { hmKey(el.dataset.l); },
+  hint() { useHint(); },
+  speak() { if (CH && CH.q) { if (!Snd.speak(speechText(CH.q))) toast("Tu navegador no puede leer en voz alta"); } },
+  next() {
+    if (!CH || !CH.done) return;
+    Snd.stopSpeak();
+    if (CH.i + 1 < CH.qs.length) { CH.i++; renderQuestion(); } else finishChallenge();
+  }
+};
+const QUIET = new Set(["opt", "seg", "pick", "forge", "mi", "ord", "key", "hint", "speak", "hammer", "shuf", "next", "tdFire", "tdSel", "tdLupa", "tdPause"]);
+function onClick(e) {
+  const t = e.target.closest("[data-act]"); if (!t) return;
+  Snd.unlock();
+  const f = ACT[t.dataset.act]; if (!f) return;
+  if (!QUIET.has(t.dataset.act)) Snd.sfx.click();
+  f(t, e);
+}
+
+/* ---------- arranque ---------- */
+function boot() {
+  load();
+  Snd.st.music = S.music !== false; Snd.st.sfx = S.sfx !== false;
+  const sky = $("#sky");
+  for (let i = 0; i < 46; i++) {
+    const d = document.createElement("i");
+    d.style.left = Math.random() * 100 + "%"; d.style.top = Math.random() * 100 + "%";
+    d.style.animationDelay = (Math.random() * 3.5).toFixed(2) + "s"; d.style.opacity = (0.2 + Math.random() * 0.5).toFixed(2);
+    sky.appendChild(d);
+  }
+  document.addEventListener("click", onClick);
+  $("#overlay").addEventListener("click", e => { if (e.target.id === "overlay" && MODAL && MODAL.dismiss) closeModal(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && MODAL && MODAL.dismiss) closeModal();
+    if (e.key === "Enter" && e.target && e.target.id === "nm") ACT.saveName();
+  });
+  document.addEventListener("visibilitychange", () => Snd.hidden(document.hidden));
+  screenTitle();
+}
+
+boot();
+</script>
+
+</body></html>
